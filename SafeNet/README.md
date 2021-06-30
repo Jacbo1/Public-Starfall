@@ -16,8 +16,8 @@ safeNet.start("hi")
 safeNet.writeUInt8(123)
 safeNet.writeEntity(chip())
 safeNet.writeString("Hello, world!")
-safeNet.send()```
-```lua
+safeNet.send()
+
 safeNet.receive("hi", function(size, ply)
   print("UInt8: " .. safeNet.readUInt8())
   print("Entity: " .. tostring(safeNet.readEntity()))
@@ -34,3 +34,6 @@ Writes a string of data while allowing the null char
 * safeNet.readData2()
 Reads a string of data written by `safeNet.writeData2()`
 * safeNet.writePlayer(string)
+Writes the player's steam ID as a string
+* safeNet.readPlayer()
+Reads the player's steam ID and uses `find.allPlayers()` and returns the first player found with that steam ID
