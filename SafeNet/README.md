@@ -74,7 +74,7 @@ All of the native net library's functions are still present, but will only be me
 * `safeNet.writeInt32(number)` Writes a signed 32 bit int: -2147483647 -> 2147483648
 * `safeNet.readInt32()` Reads a signed 32 bit int: -2147483647 -> 2147483648
 * `safeNet.writeUInt32(number)` Writes an unsigned 32 bit int: 0 -> 4294967295
-* `safeNet.readUInt32()` Reads an unsigned 322 bit int: 0 -> 4294967295
+* `safeNet.readUInt32()` Reads an unsigned 32 bit int: 0 -> 4294967295
 <br>
 * Vectors, angles, and vmatrices are written with doubles with SafeNet while the native net utils use floats. This gives more precision than the native net utils
 
