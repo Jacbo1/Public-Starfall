@@ -41,7 +41,7 @@
 
 -- safeNet.setTimeout(number) sets the timeout delay for receiving networks
 
--- safeNet.setPartitionSize(number) sets the partition size. This is the bytes per second cap
+-- safeNet.setBPS(number) sets the partition size. This is the bytes per second cap
 
 -- safeNet.readType(), safeNet.readTable(), StringStream:writeType(), and StringStream:readType() can be called with a callback and max quota for a coroutine instead of instant running
 -- StringStream:writeType(obj, cb or nil, maxQuota or nil)
@@ -53,7 +53,7 @@
 
 
 -- This is the bytes per second cap
-local partitionSize = 1024 * 1024
+local BPS = 1024 * 1024
 local timeout = 10
     
 local curReceive, curSend, curSendName
@@ -73,7 +73,7 @@ safeNet = {}
 function safeNet.setTimeout(newTimeout) timeout = newTimeout end
 
 -- Sets the bytes per second cap
-function safeNet.setPartitionSize(newPartitionSize) partitionSize = newPartitionSize end
+function safeNet.setBPS(newBPS) BPS = newBPS end
 
 function safeNet.start(name)
     curSend = safeNet.extend(bit.stringstream(stream, i, endian))
@@ -992,7 +992,7 @@ end
 hook.add("think", "SafeNet", function()
     local time = timer.curtime()
     if netTime then
-        bytesLeft = math.round((time - netTime) * partitionSize)
+        bytesLeft = math.round((time - netTime) * BPS)
     end
     netTime = time
     network()
