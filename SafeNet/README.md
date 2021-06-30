@@ -76,7 +76,7 @@ All of the native net library's functions are still present, but will only be me
 * `safeNet.writeUInt32(number)` Writes an unsigned 32 bit int: 0 -> 4294967295
 * `safeNet.readUInt32()` Reads an unsigned 32 bit int: 0 -> 4294967295
 <br>
-* Vectors, angles, and vmatrices are written with doubles with SafeNet while the native net utils use floats. This gives more precision than the native net utils
+* Vectors, angles, quaternions, and vmatrices are written with doubles with SafeNet while the native net utils use floats. This gives more precision than the native net utils
 
 #### StringStream
 SafeNet can extend the functions of StringSream objects.
