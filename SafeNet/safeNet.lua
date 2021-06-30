@@ -1,5 +1,6 @@
 --@name SafeNet
 --@author Jacbo
+--https://github.com/Jacbo1/Public-Starfall/tree/main/SafeNet
 
 -- You can extend stringstreams functions for use with this with safeNet.extend(stringstream) or creating one with safeNet.stringstream(stream, i, endian) (same params as bit.stringstream())
 -- You should be able to just override net with safeNet at the top of your file ie local net = safeNet (MAKE SURE TO KEEP IT LOCAL)
