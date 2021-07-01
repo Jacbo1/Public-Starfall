@@ -402,9 +402,9 @@ local encode, decode, encodeCoroutine, decodeCoroutine
 
 -- Elseifs have been found faster than a lookup table seemingly only when mapping to functions
 function safeNet.extend(stringStream)
-    function stringStream:writeData2(str, bytes)
-        self:writeInt32(bytes)
-        self:write(string_sub(str, 1, bytes))
+    function stringStream:writeData2(str)
+        self:writeInt32(#str)
+        self:write(str)
     end
     
     function stringStream:readData2()
