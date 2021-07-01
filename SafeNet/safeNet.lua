@@ -991,7 +991,7 @@ local function network()
 end
 
 hook.add("think", "SafeNet", function()
-    local time = timer.curtime()
+    local time = timer.systime()
     if netTime then
         bytesLeft = math.round((time - netTime) * BPS)
     end
