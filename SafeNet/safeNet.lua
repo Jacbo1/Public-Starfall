@@ -359,7 +359,7 @@ end
 
 -- Same as safeNet.writeData() but does not require a length
 function safeNet.writeData2(str)
-    curSend:writeInt32(bytes)
+    curSend:writeInt32(#str)
     curSend:write(str)
 end
 
