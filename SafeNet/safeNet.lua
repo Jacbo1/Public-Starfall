@@ -871,6 +871,9 @@ local function refillPlayerQueue(isCancel)
     end
 end
 
+local bytesLeft = 0
+local netTime
+
 local function cancelStream()
     local stream = sends[1]
     if not stream then
@@ -908,8 +911,6 @@ local function cancelStream()
     cancelQueue = false
 end
 
-local bytesLeft = 0
-local netTime
 local function network()
     if cancelQueue then
         cancelStream()
