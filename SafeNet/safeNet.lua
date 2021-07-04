@@ -887,7 +887,7 @@ local function cancelStream()
     local name = "sn stream " .. stream[1]
     local maxSize = math.min(bytesLeft - #name, net.getBytesLeft() - #name - 15)
     if maxSize <= 0 then return end
-    bytesLeft = bytesLeft - size - #name
+    bytesLeft = bytesLeft - #name
     local plys = stream[5]
     if SERVER and plys then
         local ply = plys[#plys]
