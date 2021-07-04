@@ -918,6 +918,8 @@ local function network()
     end
     local stream = sends[1]
     while stream do
+        local first = not stream[8]
+        stream[8] = true
         if not streaming then
             streaming = true
             refillPlayerQueue(false)
@@ -934,8 +936,9 @@ local function network()
                 local ply = plys[#plys]
                 if ply and ply:isValid() and ply:isPlayer() then
                     net.start(name)
-                    net.writeBool(false)
-                    net.writeBool(true)
+                    net.writeBool(first) -- First
+                    net.writeBool(false) -- Cancel
+                    net.writeBool(true) -- Last
                     net.writeUInt(size, 32)
                     net.writeData(stream[2], size)
                     net.send(ply, stream[4])
@@ -947,6 +950,7 @@ local function network()
                 end
             else
                 net.start(name)
+                net.writeBool(first)
                 net.writeBool(false)
                 net.writeBool(true)
                 net.writeUInt(size, 32)
@@ -962,6 +966,7 @@ local function network()
                 local ply = playerQueue[#playerQueue]
                 if ply and ply:isValid() and ply:isPlayer() then
                     net.start(name)
+                    net.writeBool(first)
                     net.writeBool(false)
                     net.writeBool(false)
                     net.writeUInt(maxSize, 32)
@@ -976,6 +981,7 @@ local function network()
                 end
             else
                 net.start(name)
+                net.writeBool(first)
                 net.writeBool(false)
                 net.writeBool(false)
                 net.writeUInt(maxSize, 32)
@@ -1004,6 +1010,7 @@ function safeNet.receive(name, cb)
     if cb then
         local data = ""
         local size = 0
+        local receiving = false
         net.receive("sn stream " .. name, function(_, ply)
             local timeout2
             if ply then timeout2 = math.max(ply:getPing() / 500, timeout)
@@ -1016,6 +1023,8 @@ function safeNet.receive(name, cb)
                     size = 0
                 end)
             end
+            local first = net.readBool()
+            if first then receiving = true end
             local cancel = net.readBool()
             if cancel then
                 data = ""
@@ -1024,16 +1033,19 @@ function safeNet.receive(name, cb)
                 return
             end
             local last = net.readBool()
-            local length = net.readUInt(32)
-            size = size + length
-            data = data .. net.readData(length)
-            if last then
-                timer.remove("sn stream timeout " .. name)
-                curReceive = safeNet.stringstream(data)
-                cb(size, ply)
-                data = ""
-                size = 0
+            if receiving then
+                local length = net.readUInt(32)
+                size = size + length
+                data = data .. net.readData(length)
+                if last then
+                    timer.remove("sn stream timeout " .. name)
+                    curReceive = safeNet.stringstream(data)
+                    cb(size, ply)
+                    data = ""
+                    size = 0
+                end
             end
+            if last then receiving = false end
         end)
     else
         net.receive("ss stream " .. name)
