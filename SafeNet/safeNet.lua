@@ -52,6 +52,11 @@
 -- maxQuota can be nil and will default to math.min(quotaMax() * 0.75, 0.004)
 -- safeNet reads may not work correctly after reading a type/table with a callback as it may have changed due to a different receive
 
+if SERVER then
+    print("server")
+else
+    print("client")
+end
 
 -- This is the bytes per second cap
 local BPS = 1024 * 1024
@@ -919,7 +924,6 @@ local function network()
     local stream = sends[1]
     while stream do
         local first = not stream[8]
-        stream[8] = true
         if not streaming then
             streaming = true
             refillPlayerQueue(false)
@@ -942,6 +946,7 @@ local function network()
                     net.writeUInt(size, 32)
                     net.writeData(stream[2], size)
                     net.send(ply, stream[4])
+                    stream[8] = true
                 end
                 table.remove(plys)
                 if #plys == 0 then
@@ -956,6 +961,7 @@ local function network()
                 net.writeUInt(size, 32)
                 net.writeData(stream[2], size)
                 net.send(nil, stream[4])
+                stream[8] = true
                 table.remove(sends, 1)
                 streaming = false
             end
@@ -972,6 +978,7 @@ local function network()
                     net.writeUInt(maxSize, 32)
                     net.writeData(string.sub(stream[2], 1, maxSize), maxSize)
                     net.send(ply, stream[4])
+                    stream[8] = true
                 end
                 table.remove(playerQueue)
                 if #playerQueue == 0 then
@@ -989,6 +996,7 @@ local function network()
                 net.send(nil, stream[4])
                 stream[2] = string.sub(stream[2], maxSize+1)
                 stream[3] = stream[3] - maxSize
+                stream[8] = true
             end
             stream[7] = true
             return
