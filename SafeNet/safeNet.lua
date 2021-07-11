@@ -52,11 +52,7 @@
 -- maxQuota can be nil and will default to math.min(quotaMax() * 0.75, 0.004)
 -- safeNet reads may not work correctly after reading a type/table with a callback as it may have changed due to a different receive
 
-if SERVER then
-    print("server")
-else
-    print("client")
-end
+if safeNet then return end
 
 -- This is the bytes per second cap
 local BPS = 1024 * 1024
