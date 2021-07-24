@@ -90,7 +90,7 @@ if SERVER then
     end)
 else -- CLIENT
     print("Pinging...")
-    
+    -- Client can do stuff before sending the init ping or send it now
     net.init(function(...)
         print("Got response")
         print(...)
