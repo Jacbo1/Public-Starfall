@@ -13,6 +13,8 @@
 
 -- Differences include:
 
+-- safeNet.isSending() checks for out-going streams
+
 -- Extended StringStreams will have all the same read and write methods as safeNet with the exception of
 --   - writeUInt methods as the writeInt methods essenitally write uints already
 --   - writeInt(), writeUInt(), readInt(), readUInt()
@@ -51,6 +53,50 @@
 -- Else it will use a coroutine and a callback
 -- maxQuota can be nil and will default to math.min(quotaMax() * 0.75, 0.004)
 -- safeNet reads may not work correctly after reading a type/table with a callback as it may have changed due to a different receive
+
+-- safeNet.writeType, writeTable, readType, and readTable accept varargs
+-- readType and readTable still allow the use of a callback with varargs
+
+-- safeNet.init(callback or nil) is an initialization utility and acts differently on the server and client
+-- Useful for e.g. clients ping the server when are initialized or after doing something and the server responds immediately or after doing something itself
+-- e.g. Clients ping the server and the server responds with a table of entities that it may or may not be able to spawn all at once
+-- On the client, it pings the server when called and if a callback is provided, runs the callback with the server's response
+-- On the server, a queue is kept until safeNet.init() is called. When called, it will respond to all clients with the result returned by the callback here
+-- The response can be vararg
+-- Example usage of safeNet.init():
+--[[
+--@name init example
+--@author Jacbo
+--@shared
+--@include safeNet.txt
+
+require("safeNet.txt")
+local net = safeNet
+
+if SERVER then
+    local a = 123
+    local s = "Hello, world!"
+    print("The following will be sent to clients when they init:")
+    print(a, s)
+    
+    -- You could do stuff here that needed to be done before the ping response or respond instantly
+    timer.simple(5, function()
+        print("init")
+        
+        net.init(function(ply)
+            print("Pinged by " .. ply:getName())
+            return a, s -- This will be sent to the clients
+        end)
+    end)
+else -- CLIENT
+    print("Pinging...")
+    
+    net.init(function(...)
+        print("Got response")
+        print(...)
+    end)
+end
+]]
 
 if safeNet then return end
 
@@ -382,9 +428,15 @@ function safeNet.readStream(cb)
     cb(curReceive:readData2())
 end
 
--- Writes an object
-function safeNet.writeType(obj)
-    curSend:writeType(obj)
+-- Writes an object(s)
+-- Accepts varargs
+function safeNet.writeType(...)
+    local count = select("#", ...)
+    curSend:writeInt8(count)
+    local args = {...}
+    for i = 1, count do
+        curSend:writeType(args[i])
+    end
 end
 -- Writes a table
 safeNet.writeTable = safeNet.writeType
@@ -393,9 +445,38 @@ safeNet.writeTable = safeNet.writeType
 -- If called with no inputs it will try to isntantly read
 -- Else it will use a coroutine and a callback
 -- maxQuota can be nil and will default to math.min(quotaMax() * 0.75, 0.004)
+-- Returns varargs or runs the callback with varargs
 function safeNet.readType(cb, maxQuota)
-    return curReceive:readType(cb, maxQuota)
+    local count = curReceive:readUInt8()
+    local results = {}
+    if cb then
+        if count > 1 then
+            local i = 1
+            local recurse
+            recurse = function()
+                curReceive:readType(function(result)
+                    table_insert(results, result)
+                    i = i + 1
+                    if i > count then
+                        cb(unpack(results))
+                    else
+                        recurse()
+                    end
+                end, maxQuota)
+            end
+            recurse()
+        else
+            cb()
+        end
+    else
+        for i = 1, count do
+            table_insert(results, curReceive:readType())
+        end
+        
+        return unpack(results)
+    end
 end
+
 -- Reads a table
 safeNet.readTable = safeNet.readType
 
@@ -679,6 +760,10 @@ encode = function(obj, stream)
                 stream:writeDouble(matrix:getField(row, col))
             end
         end
+    elseif type == "nil" then
+        stream:write("N")
+    else
+        stream:write("0")
     end
 end
 
@@ -723,6 +808,8 @@ decode = function(stream)
             table.insert(matrix, rowt)
         end
         return Matrix(matrix)
+    elseif type == "nil" then
+        return nil
     end
 end
 
@@ -792,6 +879,10 @@ encodeCoroutine = function(obj, stream, maxQuota)
                 stream:writeDouble(matrix:getField(row, col))
             end
         end
+    elseif type == "nil" then
+        stream:write("N")
+    else
+        stream:write("0")
     end
 end
 
@@ -838,6 +929,8 @@ decodeCoroutine = function(stream, maxQuota)
             table.insert(matrix, rowt)
         end
         return Matrix(matrix)
+    elseif type == "N" then
+        return nil
     end
 end
 
@@ -1096,4 +1189,60 @@ function safeNet.cancelAll()
             remove(sends)
         end
     else sends = {} end
+end
+
+function safeNet.isSending()
+    return sends[1] ~= nil
+end
+
+
+-- Initialization utilities
+-- Useful for e.g. clients ping the server when are initialized or after doing something and the server responds immediately or after doing something itself
+-- e.g. Clients ping the server and the server responds with a table of entities that it may or may not be able to spawn all at once
+if SERVER then
+    local plyQueue = {}
+    safeNet.receive("sn init", function(_, ply)
+        table.insert(plyQueue, ply)
+    end)
+    
+    local function respond(ply, ...)
+        safeNet.start("sn init")
+        safeNet.writeType(...)
+        safeNet.send(ply)
+    end
+    
+    function safeNet.init(callback)
+        for _, ply in pairs(plyQueue) do
+            if ply and ply:isValid() and ply:isPlayer() then
+                if callback then
+                    respond(ply, callback(ply))
+                else
+                    respond(ply)
+                end
+            end
+        end
+        
+        safeNet.receive("sn init", function(_, ply)
+            if ply and ply:isValid() and ply:isPlayer() then -- Chance that the client disconnected between sending the ping and the server receiving it
+                if callback then
+                    respond(ply, callback(ply))
+                else
+                    respond(ply)
+                end
+            end
+        end)
+        
+        plyQueue = nil
+    end
+else -- CLIENT
+    function safeNet.init(callback)
+        if callback then
+            safeNet.receive("sn init", function()
+                callback(safeNet.readType())
+            end)
+        end
+        
+        safeNet.start("sn init")
+        safeNet.send()
+    end
 end
