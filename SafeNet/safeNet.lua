@@ -709,7 +709,7 @@ encode = function(obj, stream)
         else
             stream:writeInt32(#table.getKeys(obj))
             for key, var in pairs(obj) do
-                stream:writeString(tostring(key))
+                stream:writeData2(tostring(key))
                 encode(var, stream)
             end
         end
@@ -723,7 +723,7 @@ encode = function(obj, stream)
         end
     elseif type == "string" then
         stream:write("S")
-        stream:writeString(obj)
+        stream:writeData2(obj)
     elseif type == "boolean" then
         stream:write("B")
         stream:write(obj and "1" or "0")
@@ -780,13 +780,13 @@ decode = function(stream)
             end
         else
             for i = 1, count do
-                t[stream:readString()] = decode(stream)
+                t[stream:readData2()] = decode(stream)
             end
         end
         return t
     elseif type == "I" then return stream:readInt32()
     elseif type == "D" then return stream:readDouble()
-    elseif type == "S" then return stream:readString()
+    elseif type == "S" then return stream:readData2()
     elseif type == "B" then return stream:read(1) ~= "0"
     elseif type == "V" then return Vector(stream:readDouble(), stream:readDouble(), stream:readDouble())
     elseif type == "A" then return Angle(stream:readDouble(), stream:readDouble(), stream:readDouble())
@@ -828,7 +828,7 @@ encodeCoroutine = function(obj, stream, maxQuota)
         else
             stream:writeInt32(#table.getKeys(obj))
             for key, var in pairs(obj) do
-                stream:writeString(tostring(key))
+                stream:writeData2(tostring(key))
                 encode(var, stream)
             end
         end
@@ -842,7 +842,7 @@ encodeCoroutine = function(obj, stream, maxQuota)
         end
     elseif type == "string" then
         stream:write("S")
-        stream:writeString(obj)
+        stream:writeData2(obj)
     elseif type == "boolean" then
         stream:write("B")
         stream:write(obj and "1" or "0")
@@ -901,13 +901,13 @@ decodeCoroutine = function(stream, maxQuota)
             end
         else
             for i = 1, count do
-                t[stream:readString()] = decode(stream)
+                t[stream:readData2()] = decode(stream)
             end
         end
         return t
     elseif type == "I" then return stream:readInt32()
     elseif type == "D" then return stream:readDouble()
-    elseif type == "S" then return stream:readString()
+    elseif type == "S" then return stream:readData2()
     elseif type == "B" then return stream:read(1) ~= "0"
     elseif type == "V" then return Vector(stream:readDouble(), stream:readDouble(), stream:readDouble())
     elseif type == "A" then return Angle(stream:readDouble(), stream:readDouble(), stream:readDouble())
