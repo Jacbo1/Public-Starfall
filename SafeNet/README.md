@@ -43,6 +43,9 @@ All of the native net library's functions are still present, but will only be me
 * `safeNet.cancelAll()` Cancels all pending and in-progress net messages
 * `safeNet.writeType(any)` This is not new but it supports more datatypes. Writes a table or datatype. Supported datatypes are 32 bit signed ints, doubles, booleans, tables, angles, vectors, colors, entities, players, strings, quaternions, and vmatrices
 * `safeNet.readType(callback or nil, maxQuota or nil)` Reads a table or datatype. This is not a new function but if a callback is given, it will use a coroutine which will yield at the given max quota, or if that is nil, the minimum of quotaMax() * 0.75 and 0.004. There is no coroutine version for `safeNet.writeType()`, use `StringStream:writeType()` if a coroutine is needed. If using a coroutine, this should be the last `safeNet.read...` as it may change to a newly received message during the coroutined reading
+* `safeNet.writeType()` and `safeNet.writeTable()` now accept varargs
+* `safeNet.readType()` and `safeNet.readTable()` can now return varargs or run the callback with varargs. When providing a callback i.e. making it asynchronous, they will no longer return the results, even if they did not yield. Those results will only be sent into the function now. When used without a callback, they will still return the values normally.
+* `safeNet.init(function callback or nil)` can be used to easily handle client ping and server response for initializations. E.g. clients ping the server when they spawn (does not have to be immediately) and the server responds with a list of props (not necessarily immediately). See example code at the bottom. When called on the client, it will ping the server, and if a callback is given, will run the callback with the server's response (will be varargs i.e. server responds with 2 vars, callback is called with 2 args). The server will keep a queue of players who pinged until `safeNet.init()` is called on the server. Then it will respond to all players in the queue and will immediately respond to incoming pings afterwards. If a callback is provided, the values returned by the it will be sent to the client. The callback passed to `safeNet.init()` on the server will be called with the player who pinged as an argument.
 
 [//]: # (Hello)
   Read and write functions
@@ -104,3 +107,38 @@ All of the native StringStream functions are present, but only new ones will be 
 * `StringStream:readQuat()` Reads a quaternion
 * `StringStream:writeType(any, callback or nil, maxQuota or nil)` Writes a table or datatype. Supported datatypes are 32 bit signed ints, doubles, booleans, tables, angles, vectors, colors, entities, players, strings, quaternions, and vmatrices. If a callback is given, it will use a coroutine which will yield at the given max quota, or if that is nil, the minimum of quotaMax() * 0.75 and 0.004
 * `StringStream:readType(callback or nil, maxQuota or nil)` Reads a table or datatype. If a callback is given, it will use a coroutine which will yield at the given max quota, or if that is nil, the minimum of quotaMax() * 0.75 and 0.004
+
+## safeNet.init() example
+```lua
+--@name init example
+--@author Jacbo
+--@shared
+--@include safeNet.txt
+
+require("safeNet.txt")
+local net = safeNet
+
+if SERVER then
+    local a = 123
+    local s = "Hello, world!"
+    print("The following will be sent to clients when they init:")
+    print(a, s)
+    
+    -- You could do stuff here that needed to be done before the ping response or you could remove the timer and respond instantly
+    timer.simple(5, function()
+        print("init")
+        
+        net.init(function(ply)
+            print("Pinged by " .. ply:getName())
+            return a, s -- This will be sent to the clients
+        end)
+    end)
+else -- CLIENT
+    -- Client can do stuff before sending the init ping and send later or send it now
+    print("Pinging...")
+    net.init(function(...)
+        print("Got response")
+        print(...)
+    end)
+end
+```
