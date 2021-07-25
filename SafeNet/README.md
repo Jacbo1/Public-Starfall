@@ -124,21 +124,23 @@ if SERVER then
     print("The following will be sent to clients when they init:")
     print(a, s)
     
-    -- You could do stuff here that needed to be done before the ping response or you could remove the timer and respond instantly
+    -- You could do stuff here that needed to be done before the ping response or respond instantly
     timer.simple(5, function()
         print("init")
         
-        net.init(function(ply)
+        net.init(function(ply, arg1, arg2)
             print("Pinged by " .. ply:getName())
+            print("arg1: ", arg1)
+            print("arg2: ", arg2)
             return a, s -- This will be sent to the clients
         end)
     end)
 else -- CLIENT
-    -- Client can do stuff before sending the init ping and send later or send it now
     print("Pinging...")
-    net.init(function(a, s)
+    -- Client can do stuff before sending the init ping or send it now
+    net.init(function(...)
         print("Got response")
-        print(a, s)
-    end)
+        print(...)
+    end, "hi", player():getName())
 end
 ```
