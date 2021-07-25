@@ -136,9 +136,9 @@ if SERVER then
 else -- CLIENT
     -- Client can do stuff before sending the init ping and send later or send it now
     print("Pinging...")
-    net.init(function(...)
+    net.init(function(a, s)
         print("Got response")
-        print(...)
+        print(a, s)
     end)
 end
 ```
