@@ -83,8 +83,10 @@ if SERVER then
     timer.simple(5, function()
         print("init")
         
-        net.init(function(ply)
+        net.init(function(ply, arg1, arg2)
             print("Pinged by " .. ply:getName())
+            print("arg1: ", arg1)
+            print("arg2: ", arg2)
             return a, s -- This will be sent to the clients
         end)
     end)
@@ -94,7 +96,7 @@ else -- CLIENT
     net.init(function(...)
         print("Got response")
         print(...)
-    end)
+    end, "hi", player():getName())
 end
 ]]
 
@@ -709,7 +711,7 @@ encode = function(obj, stream)
         else
             stream:writeInt32(#table.getKeys(obj))
             for key, var in pairs(obj) do
-                stream:writeData2(tostring(key))
+                stream:writeString(tostring(key))
                 encode(var, stream)
             end
         end
@@ -780,7 +782,7 @@ decode = function(stream)
             end
         else
             for i = 1, count do
-                t[stream:readData2()] = decode(stream)
+                t[stream:readString()] = decode(stream)
             end
         end
         return t
@@ -828,7 +830,7 @@ encodeCoroutine = function(obj, stream, maxQuota)
         else
             stream:writeInt32(#table.getKeys(obj))
             for key, var in pairs(obj) do
-                stream:writeData2(tostring(key))
+                stream:writeString(tostring(key))
                 encode(var, stream)
             end
         end
@@ -901,7 +903,7 @@ decodeCoroutine = function(stream, maxQuota)
             end
         else
             for i = 1, count do
-                t[stream:readData2()] = decode(stream)
+                t[stream:readString()] = decode(stream)
             end
         end
         return t
@@ -1195,14 +1197,24 @@ function safeNet.isSending()
     return sends[1] ~= nil
 end
 
+------------------------------------------------------------------
 
 -- Initialization utilities
 -- Useful for e.g. clients ping the server when are initialized or after doing something and the server responds immediately or after doing something itself
 -- e.g. Clients ping the server and the server responds with a table of entities that it may or may not be able to spawn all at once
+-- SERVER
+--  safeNet.init(callback)
+--      Retroactively responds to all queued pings from clients and will immediately respond to future pings
+--      If a callback is provided, the arguments passed into it will be cb(ply, args ...)
+--      and it will respond to the client and send back whatever is returned by the callback (can be vararg or not return anything)
+-- CLIENT
+--  safeNet.init(callback, args ...)
+--      Pings the server with the varargs provided by args (they are optional)
+--      If a callback is provided and is not nil, it will be called with cb(args ...) which will be the arguments returned from the server
 if SERVER then
     local plyQueue = {}
     safeNet.receive("sn init", function(_, ply)
-        table.insert(plyQueue, ply)
+        table.insert(plyQueue, {ply, {safeNet.readType()}})
     end)
     
     local function respond(ply, ...)
@@ -1212,10 +1224,11 @@ if SERVER then
     end
     
     function safeNet.init(callback)
-        for _, ply in pairs(plyQueue) do
+        for _, plySet in pairs(plyQueue) do
+            local ply = plySet[1]
             if ply and ply:isValid() and ply:isPlayer() then
                 if callback then
-                    respond(ply, callback(ply))
+                    respond(ply, callback(ply, unpack(plySet[2])))
                 else
                     respond(ply)
                 end
@@ -1225,7 +1238,7 @@ if SERVER then
         safeNet.receive("sn init", function(_, ply)
             if ply and ply:isValid() and ply:isPlayer() then -- Chance that the client disconnected between sending the ping and the server receiving it
                 if callback then
-                    respond(ply, callback(ply))
+                    respond(ply, callback(ply, safeNet.readType()))
                 else
                     respond(ply)
                 end
@@ -1235,7 +1248,8 @@ if SERVER then
         plyQueue = nil
     end
 else -- CLIENT
-    function safeNet.init(callback)
+    -- Callback, args to send to server
+    function safeNet.init(callback, ...)
         if callback then
             safeNet.receive("sn init", function()
                 callback(safeNet.readType())
@@ -1243,6 +1257,7 @@ else -- CLIENT
         end
         
         safeNet.start("sn init")
+        safeNet.writeType(...)
         safeNet.send()
     end
 end
