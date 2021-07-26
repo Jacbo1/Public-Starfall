@@ -20,6 +20,7 @@
 --   - writeInt(), writeUInt(), readInt(), readUInt()
 --   - writeChar(), readChar(), just use :write(c) and :read(1)
 --   - There is no writeTable and readTable; writeType and readType are exactly the same
+--   - writeHologram() and readHologram()
 
 -- safeNet.send() returns a net index that can be used to cancel that specific stream
 
@@ -33,10 +34,11 @@
 -- readColor() has an optional input for whether or not it should read this extra byte for the alpha
 -- Both default to true
 
--- It is recommended to use writeString/writeData and readStringreadData as opposed to writeStream and readStream
+-- It is recommended to use writeData2 and readData2 as opposed to writeStream and readStream
 -- The stream functions still work for compatibility reasons (as long as there are no null chars) but it is pointless as this library automatically streams everything when required
 
--- Added a writePlayer and readPlayer function
+-- safeNet.writeHologram(hologram)
+-- safeNet.readHologram()
 
 -- safeNet.stringstream(stream, i, endian) creates a StringStream object with extended functions
 
@@ -292,6 +294,14 @@ end
 -- Reads an entity
 function safeNet.readEntity()
     return entity(curReceive:readUInt16())
+end
+
+-- Writes a hologram
+safeNet.writeHologram = safeNet.writeEntity
+
+-- Reads a hologram
+function safeNet.readHologram()
+    return entity(curReceive:readUInt16()):toHologram()
 end
 
 -- Writes a "bit" (mainly here for compatibility)
@@ -574,6 +584,14 @@ function safeNet.extend(stringStream)
         return entity(self:readUInt16())
     end
     
+    function stringStream:writeHologram(ent)
+        self:writeInt16(ent:entIndex())
+    end
+    
+    function stringStream:readHologram()
+        return entity(self:readUInt16()):toHologram()
+    end
+    
     function stringStream:writePlayer(ply)
         self:writeString(ply:getSteamID())
     end
@@ -746,6 +764,9 @@ encode = function(obj, stream)
     elseif type == "Entity" then
         stream:write("E")
         stream:writeInt16(obj:entIndex())
+    elseif type == "Hologram" then
+        stream:write("H")
+        stream:writeInt16(obj:entIndex())
     elseif type == "Player" then
         stream:write("P")
         stream:writeString(obj:getSteamID())
@@ -794,6 +815,7 @@ decode = function(stream)
     elseif type == "A" then return Angle(stream:readDouble(), stream:readDouble(), stream:readDouble())
     elseif type == "C" then return Color(stream:readUInt8(), stream:readUInt8(), stream:readUInt8(), stream:readUInt8())
     elseif type == "E" then return entity(stream:readUInt16())
+    elseif type == "H" then return entity(stream:readUInt16()):toHologram()
     elseif type == "P" then
         local id = stream:readString()
         return find.allPlayers(function(ply)
@@ -865,6 +887,9 @@ encodeCoroutine = function(obj, stream, maxQuota)
     elseif type == "Entity" then
         stream:write("E")
         stream:writeInt16(obj:entIndex())
+    elseif type == "Hologram" then
+        stream:write("H")
+        stream:writeInt16(obj:entIndex())
     elseif type == "Player" then
         stream:write("P")
         stream:writeString(obj:getSteamID())
@@ -915,6 +940,7 @@ decodeCoroutine = function(stream, maxQuota)
     elseif type == "A" then return Angle(stream:readDouble(), stream:readDouble(), stream:readDouble())
     elseif type == "C" then return Color(stream:readUInt8(), stream:readUInt8(), stream:readUInt8(), stream:readUInt8())
     elseif type == "E" then return entity(stream:readUInt16())
+    elseif type == "H" then return entity(stream:readUInt16()):toHologram()
     elseif type == "P" then
         local id = stream:readString()
         return find.allPlayers(function(ply)
