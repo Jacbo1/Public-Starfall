@@ -59,6 +59,8 @@ All of the native net library's functions are still present, but will only be me
 * `safeNet.writeQuat(Quaternion)` Writes a quaternion using doubles
 * `safeNet.readQuat()` Reads a quaternion
 * `safeNet.writeStringStream(StringStream)` Writes the given StringStream object. Identical to using `safeNet.writeData(ss:getString())`
+* `safeNet.writeHologram(Hologram)` Writes a hologram
+* `safeNet.readHologram()` Reads a hologram
 
 [//]: # (Hello)
   Note that it is preferable to use the following functions for writing and reading ints as opposed to `safeNet.writeInt(number n, number bits)`, `safeNet.writeUInt(number n, number bits)`, `safeNet.readInt(number n, number bits)`, or `safeNet.readUInt(number n, number bits)` as those functions call these after checking which one to use.
@@ -94,6 +96,8 @@ All of the native StringStream functions are present, but only new ones will be 
 * `StringStream:readData2()` Reads a string written by `StringSream:writeData2(string)` and accepts null chars
 * `StringStream:writeEntity(Entity)` Writes an entity using its entity index written as an unsigned 16 bit int
 * `StringStream:readEntity()` Reads an entity by its entity index
+* `StringStream:writeHologram(Hologram)` Writes a hologram
+* `StringStream:readHologram()` Readsa hologram
 * `StringStream:writeInt24(number)` Writes a signed or unsigned 24 bit int depending on how it is read. -8388607 -> 8388608 or 0 -> 16777215
 * `StringStream:readInt24()` Reads a signed 24 bit int: -8388607 -> 8388608
 * `StringStream:readUInt24()` Reads an unsigned 24 bit int: 0 -> 16777215
