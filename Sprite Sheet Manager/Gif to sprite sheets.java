@@ -65,6 +65,7 @@ public class gifToSpriteSheet{
                 "imageHeight"
             };    
 
+        // Gif to image sequence code by Chris Stillwell https://stackoverflow.com/a/10627458
         ImageReader reader = (ImageReader)ImageIO.getImageReadersByFormatName("gif").next();
         ImageInputStream ciis = null;
         if(new File(gifPath).exists()){
@@ -154,6 +155,7 @@ public class gifToSpriteSheet{
         System.out.println("Done");
     }
 
+    // Gif delay code by Sage https://stackoverflow.com/a/20079110
     private static double getDelay(String path) throws Exception {
         ImageReader reader = ImageIO.getImageReadersBySuffix("gif").next();
         if(new File(path).exists()){
