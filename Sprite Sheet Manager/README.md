@@ -1,5 +1,6 @@
 ## Sprite Sheet Manager
-Let's you draw sprites from sprite sheets easily. Allows usage of multiple images that make up a full sprite sheet when combined (because you can only load images up to 1024x1024).
+Let's you draw sprites from sprite sheets easily. Allows usage of multiple images that make up a full sprite sheet when combined (because you can only load images up to 1024x1024).  
+The Java program is not needed and is used for converting gifs into sprite sheets. This is discussed at the bottom.
 
 ### Functions
 * `manager.loadURL(string url, number columns, number rows, function or nil callback)` - Creates a sprite sheet manager and loads the image from the URL. If a callback is provided, it will be ran when the manager finishes loading all images. Returns a sprite sheet manager object.
@@ -34,3 +35,7 @@ sprite_sheet:setCallback(function()
     end)
 end)
 ```
+
+### Converting gifs to sprite sheets
+The included java file will convert gifs into sprite sheet pngs. It can load gifs from a file path or a url but not all gifs will work. It is not an executable and is just for running within a java IDE. The settings are hard coded at the top of the class.  
+**Note: The program saves sprite sheets to the output directory as 1.png, 2.png, etc. and will overwrite any files with identical names.**
