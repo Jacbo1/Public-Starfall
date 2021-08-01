@@ -39,3 +39,6 @@ end)
 ### Converting gifs to sprite sheets
 The included java file will convert gifs into sprite sheet pngs. It can load gifs from a file path or a url but not all gifs will work. It is not an executable and is just for running within a java IDE. The settings are hard coded at the top of the class.  
 **Note: The program saves sprite sheets to the output directory as 1.png, 2.png, etc. and will overwrite any files with identical names.**
+
+---
+![Alt Text](https://github.com/Jacbo1/Public-Starfall/blob/main/Sprite%20Sheet%20Manager/demo.gif?raw=true)
