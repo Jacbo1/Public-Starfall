@@ -27,3 +27,4 @@ for i = 1, 2 do
     end
 end
 ```
+Running `my_func:restart()` would restart it prematurely.
