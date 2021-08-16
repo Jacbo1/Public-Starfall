@@ -13,6 +13,24 @@
 
 -- Differences include:
 
+-- safeNet.start(string name, string or nil prefix)
+-- name is the name of the net message but the prefix is useful for libraries implementing this one
+-- as they can use their own prefixes instead of the default "snstream" prefix
+-- this would allow the front end code to effectively use the same net message names without interfering
+-- with the library
+
+-- safeNet.send(player or table or nil targets, boolean or nil unreliable) returns a net index that can be used to cancel that specific stream
+-- targets can be nil to send to all clients from the server or send to the server from the client
+-- targets can be a player to send to that player from the server
+-- targets can be a table of players to send to from the server
+
+-- safeNet.receive(string name, function or nil callback, string or nil prefix)
+-- name is the name of the net message
+-- callback is the callback used when a message is received
+-- The prefix is useful for libraries implementing safeNet because they can use their own prefix
+-- instead of the default "snstream" prefix so front end code can effectively use the same
+-- net message names as those in the library
+
 -- safeNet.isSending() checks for out-going streams
 
 -- Extended StringStreams will have all the same read and write methods as safeNet with the exception of
@@ -21,8 +39,6 @@
 --   - writeChar(), readChar(), just use :write(c) and :read(1)
 --   - There is no writeTable and readTable; writeType and readType are exactly the same
 --   - writeHologram() and readHologram()
-
--- safeNet.send() returns a net index that can be used to cancel that specific stream
 
 -- safeNet.cancel(ID) cancels the stream corresponding to this ID (removes queued items too)
 
@@ -108,7 +124,7 @@ if safeNet then return end
 local BPS = 1024 * 1024
 local timeout = 10
     
-local curReceive, curSend, curSendName
+local curReceive, curSend, curSendName, curPrefix
 
 --safeNet object
 local bit_rshift = bit.rshift
@@ -120,14 +136,24 @@ local string_find = string.find
 local string_replace = string.replace
 local table_insert = table.insert
 local null_char = string_char(0)
+local waitForEntities = true
+local bit_band = bit.band
 safeNet = {}
+
+local sends = {}
+local streaming = false
+local canceling = false
+local playerQueue
+local playerCancelQueue
+local cancelQueue = false
 
 function safeNet.setTimeout(newTimeout) timeout = newTimeout end
 
 -- Sets the bytes per second cap
 function safeNet.setBPS(newBPS) BPS = newBPS end
 
-function safeNet.start(name)
+function safeNet.start(name, prefix)
+    curPrefix = prefix or "snstream"
     curSend = safeNet.extend(bit.stringstream(stream, i, endian))
     curSendName = name
 end
@@ -140,6 +166,27 @@ end
 -- Reads a boolean
 function safeNet.readBool()
     return curReceive:read(1) ~= "0"
+end
+
+-- Writes up to 9 booleans using the same size as 1 bool
+function safeNet.writeBools(...)
+    local int = 0
+    local args = {...}
+    for i = 0, #args-1 do
+        int = int + (args[i+1] and bit_lshift(1, i) or 0)
+    end
+    --curSend:writeInt8((a and 1 or 0) + (b and 2 or 0) + (c and 4 or 0) + (d and 16 or 0))
+    curSend:writeInt8(int)
+end
+
+-- Reads up to 9 booleans using the same size as 1 bool
+function safeNet.readBools(count)
+    local int = curReceive:readUInt8()
+    local bools = {}
+    for i = 0, count-1 do
+        bools[i+1] = (bit_and(int, bit_lshift(1, i)) ~= 0)
+    end
+    return unpack(bools)
 end
 
 -- Writes a char
@@ -312,6 +359,27 @@ end
 -- Reads a "bit" (mainly here for compatibility)
 function safeNet.readBit(b)
     return curReceive:read(1) == "0" and 0 or 1
+end
+
+-- Writes up to 9 bits using the same size as 1 bit
+function safeNet.writeBits(...)
+    local int = 0
+    local args = {...}
+    for i = 0, #args-1 do
+        int = int + ((args[i+1] ~= 0) and bit_lshift(1, i) or 0)
+    end
+    --curSend:writeInt8((a and 1 or 0) + (b and 2 or 0) + (c and 4 or 0) + (d and 16 or 0))
+    curSend:writeInt8(int)
+end
+
+-- Reads up to 9 bits using the same size as 1 bit
+function safeNet.readBits(count)
+    local int = curReceive:readUInt8()
+    local bits = {}
+    for i = 0, count-1 do
+        bits[i+1] = (bit_and(int, bit_lshift(1, i)) ~= 0) and 1 or 0
+    end
+    return unpack(bits)
 end
 
 -- Writes a float
@@ -965,12 +1033,6 @@ end
 ----------------------------------------
 
 --{name, data, length, unreliable, targets}
-local sends = {}
-local streaming = false
-local canceling = false
-local playerQueue
-local playerCancelQueue
-local cancelQueue = false
 
 local function refillPlayerQueue(isCancel)
     if SERVER then
@@ -1006,7 +1068,7 @@ local function cancelStream()
         canceling = true
         refillPlayerQueue(true)
     end
-    local name = "sn stream " .. stream[1]
+    local name = stream[1]
     local maxSize = math.min(bytesLeft - #name, net.getBytesLeft() - #name - 15)
     if maxSize <= 0 then return end
     bytesLeft = bytesLeft - #name
@@ -1046,7 +1108,7 @@ local function network()
             refillPlayerQueue(false)
         end
         local size = stream[3]
-        local name = "sn stream " .. stream[1]
+        local name = stream[1]
         local maxSize = math.min(bytesLeft - #name, net.getBytesLeft() - #name - 15)
         if maxSize <= 0 then return end
         if size <= maxSize then
@@ -1131,19 +1193,21 @@ hook.add("think", "SafeNet", function()
     network()
 end)
 
-function safeNet.receive(name, cb)
+function safeNet.receive(name, cb, prefix)
+    prefix = prefix or "snstream"
+    local name2 = prefix .. name
     if cb then
         local data = ""
         local size = 0
         local receiving = false
-        net.receive("sn stream " .. name, function(_, ply)
+        net.receive(name2, function(_, ply)
             local timeout2
             if ply then timeout2 = math.max(ply:getPing() / 500, timeout)
             else timeout2 = timeout end
-            if timer.exists("sn stream timeout " .. name) then
-                timer.adjust("sn stream timeout " .. name, timeout2)
+            if timer.exists("sn stream timeout " .. name2) then
+                timer.adjust("sn stream timeout " .. name2, timeout2)
             else
-                timer.create("sn stream timeout " .. name, timeout2, 1, function()
+                timer.create("sn stream timeout " .. name2, timeout2, 1, function()
                     data = ""
                     size = 0
                 end)
@@ -1154,7 +1218,7 @@ function safeNet.receive(name, cb)
             if cancel then
                 data = ""
                 size = 0
-                timer.remove("sn stream timeout " .. name)
+                timer.remove("sn stream timeout " .. name2)
                 return
             end
             local last = net.readBool()
@@ -1163,7 +1227,7 @@ function safeNet.receive(name, cb)
                 size = size + length
                 data = data .. net.readData(length)
                 if last then
-                    timer.remove("sn stream timeout " .. name)
+                    timer.remove("sn stream timeout " .. name2)
                     curReceive = safeNet.stringstream(data)
                     cb(size, ply)
                     data = ""
@@ -1173,20 +1237,21 @@ function safeNet.receive(name, cb)
             if last then receiving = false end
         end)
     else
-        net.receive("ss stream " .. name)
+        net.receive(name2)
     end
 end
 
 local netID = 1
 
 function safeNet.send(targets, unreliable)
+    local name = curPrefix .. curSendName
     local targets2
     if SERVER and targets ~= nil then
         if type(targets) == "Player" then targets2 = {targets}
         elseif type(targets) == "table" then targets2 = targets
         else error("Targets parameter is not nil/Player/Player list") end
     end
-    table.insert(sends, {curSendName, curSend:getString(), curSend:size(), unreliable, targets2, netID})
+    table.insert(sends, {name, curSend:getString(), curSend:size(), unreliable, targets2, netID})
     curSend = nil
     network()
     netID = netID + 1
@@ -1239,12 +1304,12 @@ end
 --      If a callback is provided and is not nil, it will be called with cb(args ...) which will be the arguments returned from the server
 if SERVER then
     local plyQueue = {}
-    safeNet.receive("sn init", function(_, ply)
+    safeNet.receive("sninit", function(_, ply)
         table.insert(plyQueue, {ply, {safeNet.readType()}})
-    end)
+    end, "")
     
     local function respond(ply, ...)
-        safeNet.start("sn init")
+        safeNet.start("sninit", "")
         safeNet.writeType(...)
         safeNet.send(ply)
     end
@@ -1261,7 +1326,7 @@ if SERVER then
             end
         end
         
-        safeNet.receive("sn init", function(_, ply)
+        safeNet.receive("sninit", function(_, ply)
             if ply and ply:isValid() and ply:isPlayer() then -- Chance that the client disconnected between sending the ping and the server receiving it
                 if callback then
                     respond(ply, callback(ply, safeNet.readType()))
@@ -1269,7 +1334,7 @@ if SERVER then
                     respond(ply)
                 end
             end
-        end)
+        end, "")
         
         plyQueue = nil
     end
@@ -1277,12 +1342,12 @@ else -- CLIENT
     -- Callback, args to send to server
     function safeNet.init(callback, ...)
         if callback then
-            safeNet.receive("sn init", function()
+            safeNet.receive("sninit", function()
                 callback(safeNet.readType())
-            end)
+            end, "")
         end
         
-        safeNet.start("sn init")
+        safeNet.start("sninit", "")
         safeNet.writeType(...)
         safeNet.send()
     end
