@@ -1,5 +1,6 @@
 --@name Better Coroutines
 --@author Jacbo
+-- https://github.com/Jacbo1/Public-Starfall/tree/main/Better%20Coroutines
 
 -- When you require this, it returns BetterCoroutine
 -- e.g. local corLib = require("better_coroutines.txt")
