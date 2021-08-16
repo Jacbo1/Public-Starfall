@@ -48,6 +48,10 @@ All of the native net library's functions are still present, but will only be me
 * `safeNet.writeType()` and `safeNet.writeTable()` now accept varargs
 * `safeNet.readType()` and `safeNet.readTable()` can now return varargs or run the callback with varargs. When providing a callback i.e. making it asynchronous, they will no longer return the results, even if they did not yield. Those results will only be sent into the function now. When used without a callback, they will still return the values normally.
 * `safeNet.init(function callback or nil)` can be used to easily handle client ping and server response for initializations. E.g. clients ping the server when they spawn (does not have to be immediately) and the server responds with a list of props (not necessarily immediately). See example code at the bottom. When called on the client, it will ping the server, and if a callback is given, will run the callback with the server's response (will be varargs i.e. server responds with 2 vars, callback is called with 2 args). The server will keep a queue of players who pinged until `safeNet.init()` is called on the server. Then it will respond to all players in the queue and will immediately respond to incoming pings afterwards. If a callback is provided, the values returned by the it will be sent to the client. The callback passed to `safeNet.init()` on the server will be called with the player who pinged as an argument.
+* `safeNet.writeBools(booleans ...)` writes up to 8 booleans in the same amount of bytes (1) as `safeNet.writeBool()`
+* `safeNet.readBools(number count)` reads up to 8 booleans written by `safeNet.writeBools()`. Returns varargs.
+* `safeNet.writeBits(numbers ...)` writes up to 8 bits in the same amount of bytes (1) as `safeNet.writeBit()`. If a number is 0, a 0 is written; otherwise a 1 is written.
+* `safeNet.readBits(number count)` reads up to 8 booleans written by `safeNet.writeBools()`. Returns varargs.
 
 [//]: # (Hello)
   Read and write functions
