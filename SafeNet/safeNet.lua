@@ -75,6 +75,12 @@
 -- safeNet.writeType, writeTable, readType, and readTable accept varargs
 -- readType and readTable still allow the use of a callback with varargs
 
+-- safeNet.writeBools(booleans ...) writes up to 8 booleans using the same amount of bytes (1) as safeNet.writeBool()
+-- safeNet.readBools(number count) reads up to 8 booleans written with safeNet.writeBools()
+
+-- safeNet.writeBits(bits ...) writes up to 8 bits using the same amount of bytes (1) as safeNet.writeBit()
+-- safeNet.readBits() reads up to 8 bits written with safeNet.writeBits()
+
 -- safeNet.init(callback or nil) is an initialization utility and acts differently on the server and client
 -- Useful for e.g. clients ping the server when are initialized or after doing something and the server responds immediately or after doing something itself
 -- e.g. Clients ping the server and the server responds with a table of entities that it may or may not be able to spawn all at once
@@ -168,18 +174,17 @@ function safeNet.readBool()
     return curReceive:read(1) ~= "0"
 end
 
--- Writes up to 9 booleans using the same size as 1 bool
+-- Writes up to 8 booleans using the same size as 1 bool
 function safeNet.writeBools(...)
     local int = 0
     local args = {...}
     for i = 0, #args-1 do
         int = int + (args[i+1] and bit_lshift(1, i) or 0)
     end
-    --curSend:writeInt8((a and 1 or 0) + (b and 2 or 0) + (c and 4 or 0) + (d and 16 or 0))
     curSend:writeInt8(int)
 end
 
--- Reads up to 9 booleans using the same size as 1 bool
+-- Reads up to 8 booleans using the same size as 1 bool
 function safeNet.readBools(count)
     local int = curReceive:readUInt8()
     local bools = {}
@@ -361,7 +366,7 @@ function safeNet.readBit(b)
     return curReceive:read(1) == "0" and 0 or 1
 end
 
--- Writes up to 9 bits using the same size as 1 bit
+-- Writes up to 8 bits using the same size as 1 bit
 function safeNet.writeBits(...)
     local int = 0
     local args = {...}
@@ -372,7 +377,7 @@ function safeNet.writeBits(...)
     curSend:writeInt8(int)
 end
 
--- Reads up to 9 bits using the same size as 1 bit
+-- Reads up to 8 bits using the same size as 1 bit
 function safeNet.readBits(count)
     local int = curReceive:readUInt8()
     local bits = {}
