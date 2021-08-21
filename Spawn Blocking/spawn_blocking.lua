@@ -1,6 +1,7 @@
 --@name Spawn Blocking
 --@author Jacbo
 --@include cor_wrap.txt
+-- https://github.com/Jacbo1/Public-Starfall/tree/main/Spawn%20Blocking
 -- cor_wrap can be found here https://github.com/Jacbo1/Public-Starfall/tree/main/Coroutine%20Wrapper
 -- This library blocks execution until the prop/effect/hologram/sound/component/ragdoll/seat/sent can be created
 -- It overwrites the original functions
