@@ -8,6 +8,7 @@
 -- timer.simple
 -- timer.create
 -- timer.adjust
+-- bass.loadURL
 -- net.receive
 -- safeNet.receive (safeNet must be included and required before this library)
 -- corWrapHook
