@@ -10,6 +10,7 @@ It will automatically wrap anything run by
 * safeNet.receive (only if safeNet is included and required before this Coroutine Wrapper. It is not required)
 For anything not in the above cases, `corWrap(function func, args ...)` or `corWrapHook(function func, string hookname, args ...)` must be used. `corWrap` will resume in a think hook while `corWrapHook` will resume in whatever hook is specified.
 ### Example
+This example uses [Spawn Blocking](https://github.com/Jacbo1/Public-Starfall/tree/main/Spawn%20Blocking)
 ```lua
 --@name Coroutine Wrapper and Spawn Blocking Example
 --@author Jacbo
