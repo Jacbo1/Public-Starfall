@@ -1,6 +1,7 @@
 --@name Coroutine Wrapper
 --@author Jacbo
 --@shared
+-- https://github.com/Jacbo1/Public-Starfall/tree/main/Coroutine%20Wrapper
 -- INCLUDE AND REQUIRE SAFENET FIRST IF USING IT
 -- It will automatically wrap everything in a coroutine that is run by
 -- hook.add
