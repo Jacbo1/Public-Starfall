@@ -132,9 +132,11 @@ timer.adjust = function(name, delay, reps, func)
     end or nil))
 end
 
-local bass_loadURL = bass.loadURL
-bass.loadURL = function(path, flags, callback)
-    return bass_loadURL(path, flags, function(...)
-        corWrap(callback, ...)
-    end)
+if CLIENT then
+    local bass_loadURL = bass.loadURL
+    bass.loadURL = function(path, flags, callback)
+        return bass_loadURL(path, flags, function(...)
+            corWrap(callback, ...)
+        end)
+    end
 end
