@@ -6,11 +6,13 @@ It will automatically wrap anything run by
 * timer.simple
 * timer.create
 * timer.adjust
+* bass.loadURL
 * net.receive
 * safeNet.receive (only if safeNet is included and required before this Coroutine Wrapper. It is not required)
 For anything not in the above cases, `corWrap(function func, args ...)` or `corWrapHook(function func, string hookname, args ...)` must be used. `corWrap` will resume in a think hook while `corWrapHook` will resume in whatever hook is specified.
 ### Example
-This example uses [Spawn Blocking](https://github.com/Jacbo1/Public-Starfall/tree/main/Spawn%20Blocking)
+This example uses [Spawn Blocking](https://github.com/Jacbo1/Public-Starfall/tree/main/Spawn%20Blocking)  
+**Note: SafeNet is not required**
 ```lua
 --@name Coroutine Wrapper and Spawn Blocking Example
 --@author Jacbo
