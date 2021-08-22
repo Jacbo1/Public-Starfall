@@ -1,7 +1,7 @@
 ## Spawn Blocking
+**[Coroutine Wrapper](https://github.com/Jacbo1/Public-Starfall/tree/main/Coroutine%20Wrapper) is required.**  
 When trying to spawn/create something, execution will be blocked until it can be created.
 ### Usage
-[Coroutine Wrapper](https://github.com/Jacbo1/Public-Starfall/tree/main/Coroutine%20Wrapper) is required.  
 It will overwrite
 * prop.create
 * prop.createComponent
