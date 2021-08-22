@@ -8,7 +8,6 @@
 -- timer.simple
 -- timer.create
 -- timer.adjust
--- bass.loadURL
 -- net.receive
 -- safeNet.receive (safeNet must be included and required before this library)
 -- corWrapHook
@@ -40,22 +39,9 @@ local timer_adjust = timer.adjust
 
 local hook_name = 0
 
-local layers = {}
-local layerLevel = 0
-local curLayer = nil
-
 function corWrapHook(func, hookname, ...)
-    layerLevel = layerLevel + 1
-    layers[layerLevel] = false
-    curLayer = false
-    
     local cor = coroutine_create(func)
     coroutine_resume(cor, ...)
-    
-    layers[layerLevel] = nil
-    layerLevel = layerLevel - 1
-    curLayer = nil
-    
     if coroutine_status(cor) ~= "dead" then
         local name = "shared funcs base " .. hook_name
         hook_name = hook_name + 1
@@ -64,13 +50,7 @@ function corWrapHook(func, hookname, ...)
             if status == "dead" then
                 hook.remove(hookname, name)
             else
-                layerLevel = layerLevel + 1
-                layers[layerLevel] = false
-                curLayer = false
                 coroutine_resume(cor)
-                layers[layerLevel] = nil
-                layerLevel = layerLevel - 1
-                curLayer = layers[layerLevel]
             end
         end)
     end
@@ -91,26 +71,13 @@ if safeNet then
 end
 
 hook.add = function(hookname, name, func)
-    local layer = {hookname, name}
-    
-    local function layerStep(...)
-        layers[layerLevel] = nil
-        layerLevel = layerLevel - 1
-        curLayer = layers[layerLevel]
-        return ...
-    end
-    
     local cor = coroutine_create(func)
-    
     hook_add(hookname, name, function(...)
         local status = coroutine_status(cor)
         if status == "dead" then
             cor = coroutine_create(func)
         end
-        layerLevel = layerLevel + 1
-        layers[layerLevel] = layer
-        curLayer = layer
-        return layerStep(coroutine_resume(cor, ...))
+        return coroutine_resume(cor, ...)
     end)
 end
 
