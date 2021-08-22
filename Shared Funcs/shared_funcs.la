@@ -1,6 +1,8 @@
 --@name Shared Funcs
 --@author Jacbo
 --@shared
+-- THIS IS NOT MEANT TO BE TAKEN SERIOUSLY NOR IS IT A GOOD WAY TO CODE
+-- https://github.com/Jacbo1/Public-Starfall/tree/main/Shared%20Funcs
 -- SafeNet can be found at https://github.com/Jacbo1/Public-Starfall/tree/main/SafeNet
 --@include safeNet.txt
 -- Coroutine Wrapper can be found at https://github.com/Jacbo1/Public-Starfall/tree/main/Coroutine%20Wrapper
