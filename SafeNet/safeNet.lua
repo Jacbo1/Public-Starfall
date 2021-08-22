@@ -160,7 +160,7 @@ function safeNet.setBPS(newBPS) BPS = newBPS end
 
 function safeNet.start(name, prefix)
     curPrefix = prefix or "snstream"
-    curSend = safeNet.extend(bit.stringstream(stream, i, endian))
+    curSend = safeNet.stringstream()
     curSendName = name
 end
 
