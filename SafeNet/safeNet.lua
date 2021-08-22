@@ -153,6 +153,14 @@ local playerQueue
 local playerCancelQueue
 local cancelQueue = false
 
+local table_findNext = table.findNext
+local table_getLastKey = table.getLastKey
+local function unpack2(tbl)
+    if table_findNext(tbl) then
+        return unpack(tbl, 1, table_getLastKey(tbl))
+    end
+end
+
 function safeNet.setTimeout(newTimeout) timeout = newTimeout end
 
 -- Sets the bytes per second cap
@@ -535,7 +543,7 @@ function safeNet.readType(cb, maxQuota)
     local count = curReceive:readUInt8()
     local results = {}
     if cb then
-        if count > 1 then
+        if count > 0 then
             local i = 1
             local recurse
             recurse = function()
@@ -543,7 +551,7 @@ function safeNet.readType(cb, maxQuota)
                     table_insert(results, result)
                     i = i + 1
                     if i > count then
-                        cb(unpack(results))
+                        cb(unpack2(results))
                     else
                         recurse()
                     end
@@ -558,7 +566,7 @@ function safeNet.readType(cb, maxQuota)
             table_insert(results, curReceive:readType())
         end
         
-        return unpack(results)
+        return unpack2(results)
     end
 end
 
@@ -1324,7 +1332,7 @@ if SERVER then
             local ply = plySet[1]
             if ply and ply:isValid() and ply:isPlayer() then
                 if callback then
-                    respond(ply, callback(ply, unpack(plySet[2])))
+                    respond(ply, callback(ply, unpack2(plySet[2])))
                 else
                     respond(ply)
                 end
