@@ -6,11 +6,29 @@ Shared Funcs aims to let you use client side functions and metamethods on the se
 ### Usage
 The original syntax remains entirely unchanged except for requirements enforced by Coroutine Wrapper due to limitations. See the [README in Coroutine Wrapper](https://github.com/Jacbo1/Public-Starfall/tree/main/Coroutine%20Wrapper) to learn more.
 ### Example
-This example spawns a table above each player's head and breaks it. Because of the spawn burst rate limit it will not work on every player of course. (Creating entities from the client currently does not work with [Spawn Blocking](https://github.com/Jacbo1/Public-Starfall/tree/main/Spawn%20Blocking) as Shared Funcs obtains the original function from the Starfall environment while Spawn Blocking simply globally replaces functions such as `prop.create()` by reassigning them.)
+This example spawns a table above each player's head and breaks it. Because of the spawn burst rate limit it will not work on every player of course.
 ```lua
 --@include shared_funcs.txt
 --@shared
 
+require("shared_funcs.txt")
+corWrap(function()
+    if CLIENT then
+        local ent = prop.create(player():getPos() + Vector(0,0,100), Angle(), "models/props_c17/FurnitureTable001a.mdl")
+        ent:breakEnt()
+    end
+end)
+```
+The same example but with [Spawn Blocking](https://github.com/Jacbo1/Public-Starfall/tree/main/Spawn%20Blocking) will spawn all props.
+```lua
+--@include safeNet.txt
+--@include spawn_blocking.txt
+--@include shared_funcs.txt
+--@shared
+
+require("safeNet.txt")
+local net = safeNet
+require("spawn_blocking.txt")
 require("shared_funcs.txt")
 corWrap(function()
     if CLIENT then
