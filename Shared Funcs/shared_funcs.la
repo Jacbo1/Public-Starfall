@@ -1,8 +1,9 @@
+-- THIS IS NOT MEANT TO BE TAKEN SERIOUSLY NOR IS IT A GOOD WAY TO CODE
+-- https://github.com/Jacbo1/Public-Starfall/tree/main/Shared%20Funcs
+
 --@name Shared Funcs
 --@author Jacbo
 --@shared
--- THIS IS NOT MEANT TO BE TAKEN SERIOUSLY NOR IS IT A GOOD WAY TO CODE
--- https://github.com/Jacbo1/Public-Starfall/tree/main/Shared%20Funcs
 -- SafeNet can be found at https://github.com/Jacbo1/Public-Starfall/tree/main/SafeNet
 --@include safeNet.txt
 -- Coroutine Wrapper can be found at https://github.com/Jacbo1/Public-Starfall/tree/main/Coroutine%20Wrapper
@@ -718,7 +719,77 @@ if SERVER then
     14 = Player:method(...)
     15 = return Player:method(...)
     ]]
+    
+    -- prop.create()
+    net.receive("prop", function(_, ply)
+        local name = net.readUInt32()
+        return2(name, ply, prop.create(net.readType()):entIndex())
+    end, "sf")
+    
+    -- prop.createComponent()
+    net.receive("comp", function(_, ply)
+        local name = net.readUInt32()
+        return2(name, ply, prop.createComponent(net.readType()):entIndex())
+    end, "sf")
+    
+    -- prop.createCustom()
+    net.receive("cust", function(_, ply)
+        local name = net.readUInt32()
+        return2(name, ply, prop.createCustom(net.readType()):entIndex())
+    end, "sf")
+    
+    -- prop.createRagdoll()
+    net.receive("rag", function(_, ply)
+        local name = net.readUInt32()
+        return2(name, ply, prop.createRagdoll(net.readType()):entIndex())
+    end, "sf")
+    
+    -- prop.createSeat()
+    net.receive("seat", function(_, ply)
+        local name = net.readUInt32()
+        return2(name, ply, prop.createSeat(net.readType()):entIndex())
+    end, "sf")
+    
+    -- prop.createSent()
+    net.receive("sent", function(_, ply)
+        local name = net.readUInt32()
+        return2(name, ply, prop.createSent(net.readType()):entIndex())
+    end, "sf")
+    
+    -- prop2mesh.create()
+    net.receive("p2m", function(_, ply)
+        local name = net.readUInt32()
+        return2(name, ply, prop2mesh.create(net.readType()):entIndex())
+    end, "sf")
 else -- CLIENT
+    local function spawnEnt(net_target, ...)
+        local name = net_name
+        net_name = net_name + 1
+        local ent
+        local received = false
+        net.receive(name, function()
+            net.receive(name, nil, "sf")
+            ent = net.readType()
+            received = true
+        end, "sf")
+        
+        net.start(net_target, "sf")
+        net.writeUInt32(name)
+        net.writeType(...)
+        net.send(SERVER and owner() or nil)
+        
+        while not received do coroutine.yield() end
+        if ent then
+            local e
+            repeat
+                e = entity(ent)
+            until e and e:isValid()
+            coroutine.yield()
+            return e
+        end
+        return ent
+    end
+
     function getUserdata() return run4("getUserdata") end
     function setUserdata(...) run5("setUserdata", ...) end
     constraint = {}
@@ -748,17 +819,19 @@ else -- CLIENT
         end
     })
     function prop.canSpawn() return run8("prop", "canSpawn") end
-    function prop.create(...) return run12("prop", "create", ...) end
-    function prop.createComponent(...) return run12("prop", "createComponent", ...) end
-    function prop.createCustom(...) return run12("prop", "createCustom", ...) end
-    function prop.createRagdoll(...) return run12("prop", "createRagdoll", ...) end
-    function prop.createSeat(...) return run12("prop", "createSeat", ...) end
-    function prop.createSent(...) return run12("prop", "createSent", ...) end
+    function prop.create(...) return spawnEnt("prop", ...) end
+    function prop.createComponent(...) return spawnEnt("comp", ...) end
+    function prop.createCustom(...) return spawnEnt("cust", ...) end
+    function prop.createRagdoll(...) return spawnEnt("rag", ...) end
+    function prop.createSeat(...) return spawnEnt("seat", ...) end
+    function prop.createSent(...) return spawnEnt("sent", ...) end
     function prop.getSpawnableSents(...) return run10("prop", "getSpawnableSents", ...) end
     function prop.propsLeft() return run8("prop", "propsLeft") end
     function prop.setPropClean(...) run9("prop", "setPropClean", ...) end
     function prop.setPropUndo(...) run9("prop", "setPropUndo", ...) end
     function prop.spawnRate() return run8("prop", "spawnRate") end
+    prop2mesh = {}
+    function prop2mesh.create(...) return spawnEnt("p2m", ...) end
     wire = {}
     function wire.adjustInputs(...) run9("wire", "adjustInputs", ...) end
     function wire.adjustOutputs(...) run9("wire", "adjustOutputs", ...) end
@@ -984,39 +1057,40 @@ else -- CLIENT
         run1("Npc", "stop", ...)
     end
     
-    
-    getMethods("p2m")["build"] = function(...)
-        run1("p2m", "build", ...)
-    end
-    getMethods("p2m")["getColor"] = function(...)
-        return run2("p2m", "getColor", ...)
-    end
-    getMethods("p2m")["getCount"] = function(...)
-        return run2("p2m", "getCount", ...)
-    end
-    getMethods("p2m")["getMaterial"] = function(...)
-        return run2("p2m", "getMaterial", ...)
-    end
-    getMethods("p2m")["pushModel"] = function(...)
-        run1("p2m", "pushModel", ...)
-    end
-    getMethods("p2m")["setAlpha"] = function(...)
-        run1("p2m", "setAlpha", ...)
-    end
-    getMethods("p2m")["setColor"] = function(...)
-        run1("p2m", "setColor", ...)
-    end
-    getMethods("p2m")["setLink"] = function(...)
-        run1("p2m", "setLink", ...)
-    end
-    getMethods("p2m")["setMaterial"] = function(...)
-        run1("p2m", "setMaterial", ...)
-    end
-    getMethods("p2m")["setScale"] = function(...)
-        run1("p2m", "setScale", ...)
-    end
-    getMethods("p2m")["setUV"] = function(...)
-        run1("p2m", "setUV", ...)
+    if getMethods("p2m") then
+        getMethods("p2m")["build"] = function(...)
+            run1("p2m", "build", ...)
+        end
+        getMethods("p2m")["getColor"] = function(...)
+            return run2("p2m", "getColor", ...)
+        end
+        getMethods("p2m")["getCount"] = function(...)
+            return run2("p2m", "getCount", ...)
+        end
+        getMethods("p2m")["getMaterial"] = function(...)
+            return run2("p2m", "getMaterial", ...)
+        end
+        getMethods("p2m")["pushModel"] = function(...)
+            run1("p2m", "pushModel", ...)
+        end
+        getMethods("p2m")["setAlpha"] = function(...)
+            run1("p2m", "setAlpha", ...)
+        end
+        getMethods("p2m")["setColor"] = function(...)
+            run1("p2m", "setColor", ...)
+        end
+        getMethods("p2m")["setLink"] = function(...)
+            run1("p2m", "setLink", ...)
+        end
+        getMethods("p2m")["setMaterial"] = function(...)
+            run1("p2m", "setMaterial", ...)
+        end
+        getMethods("p2m")["setScale"] = function(...)
+            run1("p2m", "setScale", ...)
+        end
+        getMethods("p2m")["setUV"] = function(...)
+            run1("p2m", "setUV", ...)
+        end
     end
     
     
