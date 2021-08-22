@@ -5,7 +5,7 @@
 -- You can extend stringstreams functions for use with this with safeNet.extend(stringstream) or creating one with safeNet.stringstream(stream, i, endian) (same params as bit.stringstream())
 -- You should be able to just override net with safeNet at the top of your file ie local net = safeNet (MAKE SURE TO KEEP IT LOCAL)
 -- This should be impossible to error from net burst or spamming streams and will automatically stream all data
--- Can read and write signed and unsigned int8, int16, int24, int32, and booleans, strings, players, entities, vectors, angles, chars, vmatrices, quaternions, tables, holograms, vehicles
+-- Can read and write signed and unsigned int8, int16, int24, int32, and booleans, strings, players, entities, vectors, angles, chars, vmatrices, quaternions, tables, holograms, vehicles, npcs
 
 -- Has all the same read and write functions as net and more
 
@@ -842,7 +842,7 @@ encode = function(obj, stream)
         stream:writeInt8(obj[2])
         stream:writeInt8(obj[3])
         stream:writeInt8(obj[4])
-    elseif type == "Entity" or type == "Vehicle" or type == "Weapon" then
+    elseif type == "Entity" or type == "Vehicle" or type == "Weapon" or type == "Npc" then
         stream:write("E")
         stream:writeInt16(obj:entIndex())
     elseif type == "Hologram" then
@@ -965,7 +965,7 @@ encodeCoroutine = function(obj, stream, maxQuota)
         stream:writeInt8(obj[2])
         stream:writeInt8(obj[3])
         stream:writeInt8(obj[4])
-    elseif type == "Entity" or type == "Vehicle" or type == "Weapon" then
+    elseif type == "Entity" or type == "Vehicle" or type == "Weapon" or type == "Npc" then
         stream:write("E")
         stream:writeInt16(obj:entIndex())
     elseif type == "Hologram" then
