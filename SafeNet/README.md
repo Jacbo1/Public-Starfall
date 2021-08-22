@@ -115,7 +115,7 @@ All of the native StringStream functions are present, but only new ones will be 
 * `StringStream:readVector()` Reads a vector
 * `StringStream:writeQuat(Quaternion)` Writes a quaternion using doubles
 * `StringStream:readQuat()` Reads a quaternion
-* `StringStream:writeType(any, callback or nil, maxQuota or nil)` Writes a table or datatype. Supported datatypes are 32 bit signed ints, doubles, booleans, tables, angles, vectors, colors, entities, players, strings, quaternions, vmatrices, holograms, vehicles, and weapons. If a callback is given, it will use a coroutine which will yield at the given max quota, or if that is nil, the minimum of quotaMax() * 0.75 and 0.004
+* `StringStream:writeType(any, callback or nil, maxQuota or nil)` Writes a table or datatype. Supported datatypes are 32 bit signed ints, doubles, booleans, tables, angles, vectors, colors, entities, players, strings, quaternions, vmatrices, holograms, vehicles, weapons, and npcs. If a callback is given, it will use a coroutine which will yield at the given max quota, or if that is nil, the minimum of quotaMax() * 0.75 and 0.004
 * `StringStream:readType(callback or nil, maxQuota or nil)` Reads a table or datatype. If a callback is given, it will use a coroutine which will yield at the given max quota, or if that is nil, the minimum of quotaMax() * 0.75 and 0.004
 
 ## safeNet.init() example
