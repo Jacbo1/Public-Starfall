@@ -5,7 +5,7 @@
 -- You can extend stringstreams functions for use with this with safeNet.extend(stringstream) or creating one with safeNet.stringstream(stream, i, endian) (same params as bit.stringstream())
 -- You should be able to just override net with safeNet at the top of your file ie local net = safeNet (MAKE SURE TO KEEP IT LOCAL)
 -- This should be impossible to error from net burst or spamming streams and will automatically stream all data
--- Can read and write signed and unsigned int8, int16, int24, int32, and booleans, strings, players, entities, vectors, angles, chars, vmatrices, quaternions, tables, holograms, vehicles, npcs, p2m
+-- Can read and write signed and unsigned int8, int16, int24, int32, and booleans, strings, players, entities, vectors, angles, chars, vmatrices, quaternions, tables, holograms, vehicles, weapons, npcs, p2m
 
 -- Has all the same read and write functions as net and more
 
@@ -15,7 +15,7 @@
 
 -- safeNet.start(string name, string or nil prefix)
 -- name is the name of the net message but the prefix is useful for libraries implementing this one
--- as they can use their own prefixes instead of the default "snstream" prefix
+-- as they can use their own prefixes instead of the default "snm" prefix
 -- this would allow the front end code to effectively use the same net message names without interfering
 -- with the library
 
@@ -28,7 +28,7 @@
 -- name is the name of the net message
 -- callback is the callback used when a message is received
 -- The prefix is useful for libraries implementing safeNet because they can use their own prefix
--- instead of the default "snstream" prefix so front end code can effectively use the same
+-- instead of the default "snm" prefix so front end code can effectively use the same
 -- net message names as those in the library
 
 -- safeNet.isSending() checks for out-going streams
@@ -81,6 +81,12 @@
 -- safeNet.writeBits(bits ...) writes up to 8 bits using the same amount of bytes (1) as safeNet.writeBit()
 -- safeNet.readBits() reads up to 8 bits written with safeNet.writeBits()
 
+-- safeNet.wrapReceive(function or nil func)
+-- If func is nil, deletes the safeNet.receive() wrapper
+-- Otherwise it sets the function to run the callback through
+-- Intended for libraries that need to overwrite the receive callback
+-- Wrapper function is called with (callback, message size, ply)
+
 -- safeNet.init(callback or nil) is an initialization utility and acts differently on the server and client
 -- Useful for e.g. clients ping the server when are initialized or after doing something and the server responds immediately or after doing something itself
 -- e.g. Clients ping the server and the server responds with a table of entities that it may or may not be able to spawn all at once
@@ -125,6 +131,8 @@ end
 ]]
 
 if safeNet then return end
+-- Might protect against the implementing code globally setting net to safeNet
+local net = net
 
 -- This is the bytes per second cap
 local BPS = 1024 * 1024
@@ -167,7 +175,7 @@ function safeNet.setTimeout(newTimeout) timeout = newTimeout end
 function safeNet.setBPS(newBPS) BPS = newBPS end
 
 function safeNet.start(name, prefix)
-    curPrefix = prefix or "snstream"
+    curPrefix = prefix or "snm"
     curSend = safeNet.stringstream()
     curSendName = name
 end
@@ -1047,6 +1055,15 @@ end
 
 --{name, data, length, unreliable, targets}
 
+local receiveWrapper
+-- If func is nil, deletes the safeNet.receive() wrapper
+-- Otherwise it sets the function to run the callback through
+-- Intended for libraries that need to overwrite the receive callback
+-- Wrapper function is called with (callback, message size, ply)
+function safeNet.wrapReceive(func)
+    receiveWrapper = func
+end
+
 local function refillPlayerQueue(isCancel)
     if SERVER then
         if sends[1][5] then
@@ -1207,7 +1224,7 @@ hook.add("think", "SafeNet", function()
 end)
 
 function safeNet.receive(name, cb, prefix)
-    prefix = prefix or "snstream"
+    prefix = prefix or "snm"
     local name2 = prefix .. name
     if cb then
         local data = ""
@@ -1242,7 +1259,11 @@ function safeNet.receive(name, cb, prefix)
                 if last then
                     timer.remove("sn stream timeout " .. name2)
                     curReceive = safeNet.stringstream(data)
-                    cb(size, ply)
+                    if receiveWrapper then
+                        receiveWrapper(cb, size, ply)
+                    else
+                        cb(size, ply)
+                    end
                     data = ""
                     size = 0
                 end
