@@ -135,7 +135,7 @@ if safeNet then return end
 local net = net
 
 -- This is the bytes per second cap
-local BPS = 1024 * 1024
+local BPS = 1024 * 1024 * 10
 local timeout = 10
     
 local curReceive, curSend, curSendName, curPrefix
