@@ -161,14 +161,6 @@ local playerQueue
 local playerCancelQueue
 local cancelQueue = false
 
-local table_findNext = table.findNext
-local table_getLastKey = table.getLastKey
-local function unpack2(tbl)
-    if table_findNext(tbl) then
-        return unpack(tbl, 1, table_getLastKey(tbl))
-    end
-end
-
 function safeNet.setTimeout(newTimeout) timeout = newTimeout end
 
 -- Sets the bytes per second cap
@@ -550,31 +542,30 @@ safeNet.writeTable = safeNet.writeType
 function safeNet.readType(cb, maxQuota)
     local count = curReceive:readUInt8()
     local results = {}
-    if cb then
-        if count > 0 then
-            local i = 1
-            local recurse
+    if count > 0 then
+        local i = 0
+        local recurse
+        if cb then
             recurse = function()
                 curReceive:readType(function(result)
-                    table_insert(results, result)
                     i = i + 1
-                    if i > count then
-                        cb(unpack2(results))
-                    else
-                        recurse()
+                    if i <= count then
+                        return result, recurse()
                     end
                 end, maxQuota)
             end
-            recurse()
+            cb(recurse())
         else
-            cb()
+            recurse = function()
+                i = i + 1
+                if i <= count then
+                    return curReceive:readType(), recurse()
+                end
+            end
+            return recurse()
         end
-    else
-        for i = 1, count do
-            table_insert(results, curReceive:readType())
-        end
-        
-        return unpack2(results)
+    elseif cb then
+        cb()
     end
 end
 
@@ -1339,7 +1330,12 @@ end
 if SERVER then
     local plyQueue = {}
     safeNet.receive("sninit", function(_, ply)
-        table.insert(plyQueue, {ply, {safeNet.readType()}})
+        local count = 0
+        local function getCount(...)
+            count = select("#", ...)
+            return ...
+        end
+        table.insert(plyQueue, {ply, {getCount(safeNet.readType())}, count})
     end, "")
     
     local function respond(ply, ...)
@@ -1353,7 +1349,7 @@ if SERVER then
             local ply = plySet[1]
             if ply and ply:isValid() and ply:isPlayer() then
                 if callback then
-                    respond(ply, callback(ply, unpack2(plySet[2])))
+                    respond(ply, callback(ply, unpack(plySet[2], 1, plySet[3])))
                 else
                     respond(ply)
                 end
