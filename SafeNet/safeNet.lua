@@ -531,8 +531,27 @@ function safeNet.writeType(...)
         curSend:writeType(args[i])
     end
 end
+
+function safeNet.writeTypeAsync(cb, maxQuota, ...)
+    local count = select("#", ...)
+    curSend:writeInt8(count)
+    local args = {...}
+    local i = 0
+    local recurse
+    recurse = function()
+        i = i + 1
+        if i > count then
+            cb()
+        else
+            curSend:writeType(args[i], recurse, maxQuota)
+        end
+    end
+    recurse()
+end
+
 -- Writes a table
 safeNet.writeTable = safeNet.writeType
+safeNet.writeTableAsync = safeNet.writeTypeAsync
 
 -- Reads an object
 -- If called with no inputs it will try to isntantly read
