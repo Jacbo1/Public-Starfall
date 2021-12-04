@@ -1,5 +1,5 @@
 # ReadWriteType
-Read and write more than just strings to files. Can read and write double, int8, uint8, int16, uint16, int24, uint24, int32, uint32, string, boolean, color, vector, angle, table, matrix, quaternion, nil, and varargs.
+Read and write more than just strings to files. Can read and write Angle, boolean, Color, double, float, int8, uint8, int16, uint16, int24, uint24, int32, uint32, Quaternion, string, table, varargs, Vector, and VMatrix.
 
 ## Example
 ```lua
