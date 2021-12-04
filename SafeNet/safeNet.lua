@@ -130,7 +130,6 @@ else -- CLIENT
 end
 ]]
 
-if safeNet then return end
 -- Might protect against the implementing code globally setting net to safeNet
 local net = net
 
@@ -541,21 +540,25 @@ safeNet.writeTable = safeNet.writeType
 -- maxQuota can be nil and will default to math.min(quotaMax() * 0.75, 0.004)
 -- Returns varargs or runs the callback with varargs
 function safeNet.readType(cb, maxQuota)
+    print("A")
     local count = curReceive:readUInt8()
-    local results = {}
     if count > 0 then
         local i = 0
         local recurse
         if cb then
+            local results = {}
             recurse = function()
+                if i >= count then
+                    cb(unpack(results, 1, count))
+                    return
+                end
                 curReceive:readType(function(result)
                     i = i + 1
-                    if i <= count then
-                        return result, recurse()
-                    end
+                    table_insert(results, result)
+                    recurse()
                 end, maxQuota)
             end
-            cb(recurse())
+            recurse()
         else
             recurse = function()
                 i = i + 1
@@ -915,6 +918,8 @@ decode = function(stream)
         return Matrix(matrix)
     elseif type == "N" then
         return nil
+    else
+        stream:write("0")
     end
 end
 
@@ -929,12 +934,12 @@ encodeCoroutine = function(obj, stream, maxQuota)
         stream:write(seq and "1" or "0")
         if seq then
             stream:writeInt32(#obj)
-            for _, var in ipairs(obj) do encode(var, stream) end
+            for _, var in ipairs(obj) do encodeCoroutine(var, stream, maxQuota) end
         else
             stream:writeInt32(#table.getKeys(obj))
             for key, var in pairs(obj) do
                 stream:writeString(tostring(key))
-                encode(var, stream)
+                encodeCoroutine(var, stream, maxQuota)
             end
         end
     elseif type == "number" then
@@ -1005,11 +1010,11 @@ decodeCoroutine = function(stream, maxQuota)
         local t = {}
         if seq then
             for i = 1, count do
-                table_insert(t, decode(stream))
+                table_insert(t, decodeCoroutine(stream, maxQuota))
             end
         else
             for i = 1, count do
-                t[stream:readString()] = decode(stream)
+                t[stream:readString()] = decodeCoroutine(stream, maxQuota)
             end
         end
         return t
