@@ -794,7 +794,7 @@ safeNet.stringStream = safeNet.stringstream
 
 -- Writes a StringStream
 function safeNet.writeStringStream(stream)
-    curSend:writeData(stream:getString())
+    curSend:write(stream:getString())
 end
 
 -- Elseifs have been found faster in general than a lookup table seemingly only when mapping to functions
