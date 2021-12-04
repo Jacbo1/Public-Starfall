@@ -912,7 +912,7 @@ decode = function(stream)
             table.insert(matrix, rowt)
         end
         return Matrix(matrix)
-    elseif type == "nil" then
+    elseif type == "N" then
         return nil
     end
 end
