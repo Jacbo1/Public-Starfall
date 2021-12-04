@@ -540,7 +540,6 @@ safeNet.writeTable = safeNet.writeType
 -- maxQuota can be nil and will default to math.min(quotaMax() * 0.75, 0.004)
 -- Returns varargs or runs the callback with varargs
 function safeNet.readType(cb, maxQuota)
-    print("A")
     local count = curReceive:readUInt8()
     if count > 0 then
         local i = 0
