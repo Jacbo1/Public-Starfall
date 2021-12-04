@@ -860,7 +860,7 @@ encode = function(obj, stream)
         stream:write("M")
         for row = 1, 4 do
             for col = 1, 4 do
-                stream:writeDouble(matrix:getField(row, col))
+                stream:writeDouble(obj:getField(row, col))
             end
         end
     elseif type == "nil" then
