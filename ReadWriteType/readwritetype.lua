@@ -18,7 +18,9 @@ if CLIENT then
     
     FileReader = setmetatable({}, {__call = function(t, ...) return t.create(...) end})
     FileReader.__index = FileReader
-    function FileReader.create(path, fr)
+    
+    -- Create a FileReader
+    function FileReader.create(path)
         local data = file.read(path)
         -- {buffer, bufferPos, bufferSize}
         local reader = {data, 1, #data}
