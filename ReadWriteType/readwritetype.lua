@@ -28,6 +28,11 @@ if CLIENT then
         return reader
     end
     
+    -- Returns the file text
+    function FileReader:getBuffer()
+        return self[1]
+    end
+    
     -- Get the position of the buffer reader
     function FileReader:getBufferPos()
         return self[2]
