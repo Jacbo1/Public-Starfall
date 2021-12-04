@@ -1,4 +1,4 @@
---@name ReadWriteType
+--@name TypeReadWrite
 --@author Jacbo
 --@client
 
@@ -16,11 +16,9 @@ if CLIENT then
     local math_floor = math.floor
     local table_insert = table.insert
     
-    FileReader = {}
+    FileReader = setmetatable({}, {__call = function(t, ...) return t.create(...) end})
     FileReader.__index = FileReader
-    
-    -- "Opens" a file to read the types from it
-    function file.open(path)
+    function FileReader.create(path, fr)
         local data = file.read(path)
         -- {buffer, bufferPos, bufferSize}
         local reader = {data, 1, #data}
@@ -477,13 +475,12 @@ if CLIENT then
     file.appendTable = file.appendType
     
     -- Write a type asynchronously
-    function file.appendTypeAsync(path, cb, maxQuota, ...)
+    function file.appendTypeAsync(path, maxQuota, cb, ...)
         maxQuota = maxQuota or math.min(quotaMax() * 0.75, 0.004)
         local count = select("#", ...)
         file.appendInt8(path, count)
         local args = {...}
         
-        local running = true
         local writeType2 = coroutine.wrap(function()
             for i = 1, count do
                 writeType(path, args[i], maxQuota)
@@ -492,8 +489,8 @@ if CLIENT then
             return true
         end)
         if writeType2() ~= true then
-            local name = "encode " .. math.rand(0,1)
-            running = false
+            local running = false
+            local name = "read " .. math.rand(0,1)
             hook.add("think", name, function()
                 if not running then
                     running = true
@@ -507,7 +504,9 @@ if CLIENT then
     end
     
     -- Write a table asynchronously
-    file.appendTableAsync = file.appendTypeAsync
+    function file.appendTableAsync(path, tbl, maxQuota, cb)
+        file.appendTypeAsync(path, maxQuota, cb, tbl)
+    end
     
     local readType
     -- elseif found to be generally faster here than a lookup table
@@ -545,7 +544,6 @@ if CLIENT then
     -- Read a type
     function FileReader:readType()
         local count = self:readUInt8()
-        local results = {}
         if count > 0 then
             local i = 0
             local recurse
@@ -565,25 +563,44 @@ if CLIENT then
     end
     
     -- Read a type asynchronously
-    function FileReader:readTypeAsync(maxQuota)
+    function FileReader:readTypeAsync(maxQuota, cb)
         maxQuota = maxQuota or math.min(quotaMax() * 0.75, 0.004)
         local count = self:readUInt8()
-        local results = {}
-        if count > 0 then
-            local i = 0
-            local recurse
-            recurse = function()
-                i = i + 1
-                if i <= count then
-                    return readType(self, maxQuota), recurse()
+        local fr = self
+        
+        local readType2 = coroutine.wrap(function()
+            if count > 0 then
+                local i = 0
+                local recurse
+                recurse = function()
+                    i = i + 1
+                    if i <= count then
+                        return readType(fr, maxQuota), recurse()
+                    end
                 end
+                cb(recurse())
+                return true
             end
-            return recurse()
+            cb()
+            return true
+        end)
+        if readType2() ~= true then
+            local running = false
+            local name = "read " .. math.rand(0,1)
+            hook.add("think", name, function()
+                if not running then
+                    running = true
+                    if readType2() == true then
+                        hook.remove("think", name)
+                    end
+                    running = false
+                end
+            end)
         end
     end
     
     -- Read a table asynchronously
-    function FileReader:readTableAsync(maxQuota)
-        return self:readTypeAsync(maxQuota)
+    function FileReader:readTableAsync(maxQuota, cb)
+        self:readTypeAsync(maxQuota, cb)
     end
 end
