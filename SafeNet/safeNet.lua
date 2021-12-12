@@ -232,19 +232,6 @@ function safeNet.readColor(hasAlpha)
         (hasAlpha == nil or hasAlpha) and curReceive:readUInt8() or nil)
 end
 
--- Writes a player
-function safeNet.writePlayer(ply)
-    curSend:writeString(ply:getSteamID())
-end
-
--- Reads a player
-function safeNet.readPlayer()
-    local steamID = curReceive:readString()
-    return find.allPlayers(function(ply)
-        return ply:getSteamID() == steamID
-    end)[1]
-end
-
 -- Writes an 8 bit int
 -- -127 to 128
 function safeNet.writeInt8(num) curSend:writeInt8(num) end
@@ -347,20 +334,23 @@ end
 
 -- Writes an entity
 function safeNet.writeEntity(ent)
-    curSend:writeInt16(ent:entIndex())
+    curSend:writeEntity(ent)
 end
 
 -- Reads an entity
-function safeNet.readEntity()
-    return entity(curReceive:readUInt16())
+-- If cb is provided it will wait to safely load the entity like with net.readEntity(callback)
+-- cb is optional
+function safeNet.readEntity(cb)
+    return curReceive:readEntity(cb)
 end
 
 -- Writes a hologram
 safeNet.writeHologram = safeNet.writeEntity
 
 -- Reads a hologram
-function safeNet.readHologram()
-    return entity(curReceive:readUInt16()):toHologram()
+-- callback is optional. Functions the same as net.readEntity(callback)
+function safeNet.readHologram(cb)
+    return curReceive:toHologram(cb)
 end
 
 -- Writes a "bit" (mainly here for compatibility)
@@ -659,31 +649,31 @@ function safeNet.extend(stringStream)
             (hasAlpha == nil or hasAlpha) and self:readUInt8() or nil)
     end
     
-    function stringStream:writeEntity(ent)
-        self:writeInt16(ent:entIndex())
-    end
-    
-    function stringStream:readEntity()
-        return entity(self:readUInt16())
-    end
-    
     function stringStream:writeHologram(ent)
-        self:writeInt16(ent:entIndex())
+        self:writeEntity6(ent)
     end
     
-    function stringStream:readHologram()
-        return entity(self:readUInt16()):toHologram()
+    -- Callback is optional
+    function stringStream:readHologram(cb)
+        if cb then
+            self:readEntity(function(ent)
+                if ent then
+                    cb(ent:toHologram())
+                else
+                    cb(ent)
+                end
+            end)
+        end
+        return self:readEntity():toHologram()
     end
     
     function stringStream:writePlayer(ply)
-        self:writeString(ply:getSteamID())
+        self:writeEntity(ply)
     end
     
-    function stringStream:readPlayer()
-        local id = self:readString()
-        return find.allPlayers(function(ply)
-            return ply:getSteamID() == id
-        end)[1]
+    -- Callback is optional
+    function stringStream:readPlayer(cb)
+        return self:readEntity(cb)
     end
     
     -- Writes a quaternion
@@ -800,7 +790,8 @@ function safeNet.writeStringStream(stream)
 end
 
 -- Elseifs have been found faster in general than a lookup table seemingly only when mapping to functions
-encode = function(obj, stream)
+encode = function(obj, stream, maxQuota)
+    while maxQuota and quotaAverage() >= maxQuota do coroutine.yield() end
     local type = type(obj)
     if type == "table" then
         stream:write("T")
@@ -874,7 +865,8 @@ encode = function(obj, stream)
 end
 
 -- Elseifs have been found faster in general than a lookup table seemingly only when mapping to functions
-decode = function(stream)
+decode = function(stream, maxQuota)
+    while maxQuota and quotaAverage() >= maxQuota do coroutine.yield() end
     local type = stream:read(1)
     if type == "T" then
         local seq = stream:read(1) ~= "0"
@@ -919,131 +911,6 @@ decode = function(stream)
         return nil
     else
         stream:write("0")
-    end
-end
-
--- Elseifs have been found faster in general than a lookup table seemingly only when mapping to functions
--- Second function to avoid any excess cpu from non-coroutined version
-encodeCoroutine = function(obj, stream, maxQuota)
-    while quotaAverage() >= maxQuota do coroutine.yield() end
-    local type = type(obj)
-    if type == "table" then
-        stream:write("T")
-        local seq = table.isSequential(obj)
-        stream:write(seq and "1" or "0")
-        if seq then
-            stream:writeInt32(#obj)
-            for _, var in ipairs(obj) do encodeCoroutine(var, stream, maxQuota) end
-        else
-            stream:writeInt32(#table.getKeys(obj))
-            for key, var in pairs(obj) do
-                stream:writeString(tostring(key))
-                encodeCoroutine(var, stream, maxQuota)
-            end
-        end
-    elseif type == "number" then
-        if obj <= 2147483648 and obj % 1 == 0 then
-            stream:write("I")
-            stream:writeInt32(obj)
-        else
-            stream:write("D")
-            stream:writeDouble(obj)
-        end
-    elseif type == "string" then
-        stream:write("S")
-        stream:writeData2(obj)
-    elseif type == "boolean" then
-        stream:write("B")
-        stream:write(obj and "1" or "0")
-    elseif type == "Vector" then
-        stream:write("V")
-        stream:writeVector(obj)
-    elseif type == "Angle" then
-        stream:write("A")
-        stream:writeDouble(obj[1])
-        stream:writeDouble(obj[2])
-        stream:writeDouble(obj[3])
-    elseif type == "Color" then
-        stream:write("C")
-        stream:writeInt8(obj[1])
-        stream:writeInt8(obj[2])
-        stream:writeInt8(obj[3])
-        stream:writeInt8(obj[4])
-    elseif type == "Entity" or type == "Vehicle" or type == "Weapon" or type == "Npc" or type == "p2m" then
-        stream:write("E")
-        stream:writeInt16(obj:entIndex())
-    elseif type == "Hologram" then
-        stream:write("H")
-        stream:writeInt16(obj:entIndex())
-    elseif type == "Player" then
-        stream:write("P")
-        stream:writeString(obj:getSteamID())
-    elseif type == "Quaternion" then
-        stream:write("Q")
-        stream:writeDouble(obj[1])
-        stream:writeDouble(obj[2])
-        stream:writeDouble(obj[3])
-        stream:writeDouble(obj[4])
-    elseif type == "VMatrix" then
-        stream:write("M")
-        for row = 1, 4 do
-            for col = 1, 4 do
-                stream:writeDouble(matrix:getField(row, col))
-            end
-        end
-    elseif type == "nil" then
-        stream:write("N")
-    else
-        stream:write("0")
-    end
-end
-
--- Elseifs have been found faster in general than a lookup table seemingly only when mapping to functions
--- Second function to avoid any excess cpu from non-coroutined version
-decodeCoroutine = function(stream, maxQuota)
-    while quotaAverage() >= maxQuota do coroutine.yield() end
-    local type = stream:read(1)
-    if type == "T" then
-        local seq = stream:read(1) ~= "0"
-        local count = stream:readUInt32()
-        local t = {}
-        if seq then
-            for i = 1, count do
-                table_insert(t, decodeCoroutine(stream, maxQuota))
-            end
-        else
-            for i = 1, count do
-                t[stream:readString()] = decodeCoroutine(stream, maxQuota)
-            end
-        end
-        return t
-    elseif type == "I" then return stream:readInt32()
-    elseif type == "D" then return stream:readDouble()
-    elseif type == "S" then return stream:readData2()
-    elseif type == "B" then return stream:read(1) ~= "0"
-    elseif type == "V" then return Vector(stream:readDouble(), stream:readDouble(), stream:readDouble())
-    elseif type == "A" then return Angle(stream:readDouble(), stream:readDouble(), stream:readDouble())
-    elseif type == "C" then return Color(stream:readUInt8(), stream:readUInt8(), stream:readUInt8(), stream:readUInt8())
-    elseif type == "E" then return entity(stream:readUInt16())
-    elseif type == "H" then return entity(stream:readUInt16()):toHologram()
-    elseif type == "P" then
-        local id = stream:readString()
-        return find.allPlayers(function(ply)
-            return ply:getSteamID() == id
-        end)[1]
-    elseif type == "Q" then return Quaternion(stream:readDouble(), stream:readDouble(), stream:readDouble(), stream:readDouble())
-    elseif type == "M" then
-        local matrix = {}
-        for row = 1, 4 do
-            local rowt = {}
-            for col = 1, 4 do
-                table.insert(rowt, stream:readDouble())
-            end
-            table.insert(matrix, rowt)
-        end
-        return Matrix(matrix)
-    elseif type == "N" then
-        return nil
     end
 end
 
