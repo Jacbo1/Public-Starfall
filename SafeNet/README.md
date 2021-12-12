@@ -60,13 +60,11 @@ All of the native net library's functions are still present, but will only be me
 * `safeNet.writeData(string, size or nil)` This is not new but the size paramater is now optional. It is not optional for `safeNet.readData()` however
 * `safeNet.writeData2(string)` Writes a string of data while allowing the null char
 * `safeNet.readData2()` Reads a string of data written by `safeNet.writeData2()`
-* `safeNet.writePlayer(Player)` Writes the player's steam ID as a string. Alternatively you can use `safeNet.writeEntity(Player)` and its corresponding `safeNet.readEntity()`
-* `safeNet.readPlayer()` Reads the player's steam ID and uses `find.allPlayers()` and returns the first player found with that steam ID
 * `safeNet.writeQuat(Quaternion)` Writes a quaternion using doubles
 * `safeNet.readQuat()` Reads a quaternion
 * `safeNet.writeStringStream(StringStream)` Writes the given StringStream object. Identical to using `safeNet.writeData(ss:getString())`
 * `safeNet.writeHologram(Hologram)` Writes a hologram
-* `safeNet.readHologram()` Reads a hologram
+* `safeNet.readHologram(callback or nil)` Reads a hologram. If on client and a callback is provided, it will wait for the entity to become valid like net.readEntity(callback)
 
 [//]: # (Hello)
   Note that it is preferable to use the following functions for writing and reading ints as opposed to `safeNet.writeInt(number n, number bits)`, `safeNet.writeUInt(number n, number bits)`, `safeNet.readInt(number n, number bits)`, or `safeNet.readUInt(number n, number bits)` as those functions call these after checking which one to use.
@@ -101,16 +99,14 @@ All of the native StringStream functions are present, but only new ones will be 
 * `StringStream:writeData2(string)` Writes a string and its length and accepts null chars
 * `StringStream:readData2()` Reads a string written by `StringSream:writeData2(string)` and accepts null chars
 * `StringStream:writeEntity(Entity)` Writes an entity using its entity index written as an unsigned 16 bit int
-* `StringStream:readEntity()` Reads an entity by its entity index
+* `StringStream:readEntity(callback or nil)` Reads an entity by its entity index. If on client and a callback is provided, it will wait for the entity to become valid like net.readEntity(callback)
 * `StringStream:writeHologram(Hologram)` Writes a hologram
-* `StringStream:readHologram()` Readsa hologram
+* `StringStream:readHologram(callback or nil)` Readsa hologram. If on client and a callback is provided, it will wait for the entity to become valid like net.readEntity(callback)
 * `StringStream:writeInt24(number)` Writes a signed or unsigned 24 bit int depending on how it is read. -8388607 -> 8388608 or 0 -> 16777215
 * `StringStream:readInt24()` Reads a signed 24 bit int: -8388607 -> 8388608
 * `StringStream:readUInt24()` Reads an unsigned 24 bit int: 0 -> 16777215
 * `StringStream:writeMatrix(VMatrix)` Writes a VMatrix using doubles
 * `StringStream:readMatrix()` Reads a VMatrix
-* `StringStream:writePlayer(Player)` Writes the player's steam ID as a string. Alternatively you can use `StringStream:writeEntity(Player)` and its corresponding `StringStream:readEntity()`
-* `StringStream:readPlayer()` Reads the player's steam ID and uses `find.allPlayers()` and returns the first player found with that steam ID
 * `StringStream:writeVector(Vector)` Writes a vector using doubles
 * `StringStream:readVector()` Reads a vector
 * `StringStream:writeQuat(Quaternion)` Writes a quaternion using doubles
