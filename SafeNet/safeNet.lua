@@ -711,7 +711,7 @@ function safeNet.extend(stringStream)
             maxQuota = maxQuota or math.min(quotaMax() * 0.75, 0.004)
             local running = false
             local encode2 = coroutine.wrap(function()
-                encodeCoroutine(obj, self, maxQuota)
+                encode(obj, self, maxQuota)
                 cb()
                 return true
             end)
@@ -743,7 +743,7 @@ function safeNet.extend(stringStream)
             maxQuota = maxQuota or math.min(quotaMax() * 0.75, 0.004)
             local running = false
             local decode2 = coroutine.wrap(function()
-                cb(decodeCoroutine(self, maxQuota))
+                cb(decode(self, maxQuota))
                 return true
             end)
             running = true
