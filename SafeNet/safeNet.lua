@@ -667,15 +667,6 @@ function safeNet.extend(stringStream)
         return self:readEntity():toHologram()
     end
     
-    function stringStream:writePlayer(ply)
-        self:writeEntity(ply)
-    end
-    
-    -- Callback is optional
-    function stringStream:readPlayer(cb)
-        return self:readEntity(cb)
-    end
-    
     -- Writes a quaternion
     function stringStream:writeQuat(quat)
         self:writeDouble(quat[1])
@@ -835,15 +826,12 @@ encode = function(obj, stream, maxQuota)
         stream:writeInt8(obj[2])
         stream:writeInt8(obj[3])
         stream:writeInt8(obj[4])
-    elseif type == "Entity" or type == "Vehicle" or type == "Weapon" or type == "Npc" or type == "p2m" then
+    elseif type == "Entity" or type == "Player" or type == "Vehicle" or type == "Weapon" or type == "Npc" or type == "p2m" then
         stream:write("E")
         stream:writeInt16(obj:entIndex())
     elseif type == "Hologram" then
         stream:write("H")
         stream:writeInt16(obj:entIndex())
-    elseif type == "Player" then
-        stream:write("P")
-        stream:writeString(obj:getSteamID())
     elseif type == "Quaternion" then
         stream:write("Q")
         stream:writeDouble(obj[1])
@@ -891,11 +879,6 @@ decode = function(stream, maxQuota)
     elseif type == "C" then return Color(stream:readUInt8(), stream:readUInt8(), stream:readUInt8(), stream:readUInt8())
     elseif type == "E" then return entity(stream:readUInt16())
     elseif type == "H" then return entity(stream:readUInt16()):toHologram()
-    elseif type == "P" then
-        local id = stream:readString()
-        return find.allPlayers(function(ply)
-            return ply:getSteamID() == id
-        end)[1]
     elseif type == "Q" then return Quaternion(stream:readDouble(), stream:readDouble(), stream:readDouble(), stream:readDouble())
     elseif type == "M" then
         local matrix = {}
