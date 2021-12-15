@@ -108,6 +108,16 @@ if CLIENT then
         self[5] = frame
     end
     
+    -- Set the start frame
+    function anim:setStart(frame)
+        self[8] = frame
+    end
+    
+    -- Set the restart frame
+    function anim:setRestart(frame)
+        self[7] = frame
+    end
+    
     hook.add("think", "anim_lib playAnimations", function()
         local ftime = timer.frametime()
         local destroy = {}
