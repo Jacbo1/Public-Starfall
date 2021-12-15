@@ -51,15 +51,15 @@ if CLIENT then
         end
         
         local t = {
-            ent,
-            frameData,
+            ent,                    -- Entity
+            frameData,              -- Frames
             0,                      -- Time
             data.TimeScale or 1,    -- Speed
             data.StartFrame or 1,   -- Frame
-            data.Interpolation,
-            data.RestartFrame or 1,
-            data.StartFrame or 1,
-            frame0
+            data.Interpolation,     -- Interpolation mode
+            data.RestartFrame or 1, -- Restart frame
+            data.StartFrame or 1,   -- Start frame
+            frame0                  -- Reference frame (frame 0)
         }
         setmetatable(t, anim)
         return t
