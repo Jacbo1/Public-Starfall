@@ -118,6 +118,11 @@ if CLIENT then
         self[7] = frame
     end
     
+    -- Set the interpolation mode
+    function anim:setInterpolation(mode)
+        self[6] = mode
+    end
+    
     hook.add("think", "anim_lib playAnimations", function()
         local ftime = timer.frametime()
         local destroy = {}
