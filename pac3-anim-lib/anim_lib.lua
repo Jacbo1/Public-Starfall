@@ -59,7 +59,8 @@ if CLIENT then
             data.Interpolation,     -- Interpolation mode
             data.RestartFrame or 1, -- Restart frame
             data.StartFrame or 1,   -- Start frame
-            frame0                  -- Reference frame (frame 0)
+            frame0,                 -- Reference frame (frame 0)
+            frame0.BoneInfo         -- Current pose
         }
         setmetatable(t, anim)
         return t
@@ -97,9 +98,9 @@ if CLIENT then
         self[5] = self[8]
     end
     
-    -- Set rate
-    function anim:setRate(rate)
-        self[4] = rate
+    -- Set speed
+    function anim:setSpeed(speed)
+        self[4] = speed
     end
     
     -- Set the frame and time
@@ -136,7 +137,7 @@ if CLIENT then
                     anim[5] = anim[5] + 1
                     if anim[5] > #frames then
                         anim[5] = anim[7]       -- Set frame to restart frame
-                        end
+                    end
                     len = frames[anim[5]].Len
                 end
                 anim[3] = time
@@ -145,12 +146,18 @@ if CLIENT then
                 local ratio = time / len
                 local frame1 = (frames[anim[5] - 1] or anim[9]).BoneInfo
                 local frame2 = frames[anim[5]].BoneInfo
+                local curPose = anim[10]
             
                 if anim[6] == "none" then
                     -- Not interpolated
                     for bone, info in pairs(frame2) do
-                        ent:manipulateBonePosition(bone, info[1])
-                        ent:manipulateBoneAngles(bone, info[2])
+                        local cur = curPose[bone]
+                        if info[1] ~= cur[1] then
+                            ent:manipulateBonePosition(bone, info[1])
+                        end
+                        if info[2] ~= cur[2] then
+                            ent:manipulateBoneAngles(bone, info[2])
+                        end
                     end
                 else
                     -- Interpolated
@@ -167,6 +174,7 @@ if CLIENT then
                                 local info2 = frame2[bone]
                                 local info3 = frame3[bone]
                                 
+                                -- Cubic position
                                 local pos = info3[1] - info2[1] - info0[1] + info1[1]
                                 local pos = pos * ratio * ratioSqr + (info0[1] - info1[1] - pos) * ratioSqr + (info2[1] - info0[1]) * ratio + info1[1]
                                 ent:manipulateBonePosition(bone, pos)
@@ -188,20 +196,27 @@ if CLIENT then
                     
                     for bone, info1 in pairs(frame1) do
                         local info2 = frame2[bone]
+                        local cur = curPose[bone]
                         if info1[1] == info2[1] then
-                            ent:manipulateBonePosition(bone, info1[1])
+                            if info1[1] ~= cur[1] then
+                                ent:manipulateBonePosition(bone, info1[1])
+                            end
                         else
                             ent:manipulateBonePosition(bone, math_lerpVector(ratio, info1[1], info2[1]))
                         end
                         if info1[2] == info2[2] then
-                            ent:manipulateBoneAngles(bone, info1[2])
+                            if info1[2] ~= cur[2] then
+                                ent:manipulateBoneAngles(bone, info1[2])
+                            end
                         else
                             ent:manipulateBoneAngles(bone, math_lerpAngle(ratio, info1[2], info2[2]))
                         end
                     end
                 end
+                curPose = frame1
             end,
             function(err)
+                print(err)
                 table.insert(destroy, anim)
             end)
         end
