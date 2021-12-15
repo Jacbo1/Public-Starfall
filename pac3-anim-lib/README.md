@@ -1,5 +1,5 @@
 # Pac3 Animation Library
-Parse Pac3 animations and play them on holograms.
+Parse Pac3 custom animations and play them on holograms.
 ## How to use
 ```lua
 --@name Anim Lib Test
