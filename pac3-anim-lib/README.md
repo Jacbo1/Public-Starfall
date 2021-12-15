@@ -23,3 +23,4 @@ myAnim:play()
 * `anim:setFrame(frame, time or nil)` Sets the frame and time. `time` defaults to 0. The time determines how far along in the frame the animation is. If the frame has a duration of 0.5 seconds, then time should be set to 0.25 to be halfway through. It is not the time ellapsed for the entire animation. `frame` is alternatively `anim[5]` and `time` is alternatively `anim[2]`.
 * `anim:setStart(frame)` Sets the start frame. Alternatively use `anim[8]`.
 * `anim:setRestart(frame)` Sets the restart frame. Alternatively use `anim[7]`.
+* `anim:setInterpolation(mode)` Sets the interpolation mode. Valid modes: linear, cosine, cubic, none.
