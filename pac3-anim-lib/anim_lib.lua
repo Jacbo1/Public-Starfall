@@ -1,5 +1,6 @@
 --@name Animation Library
 --@author Jacbo
+-- https://github.com/Jacbo1/Public-Starfall/tree/main/pac3-anim-lib
 
 if CLIENT then
     local table_getKeys = table.getKeys
@@ -96,9 +97,9 @@ if CLIENT then
         self[5] = self[8]
     end
     
-    -- Set speed
-    function anim:setSpeed(speed)
-        self[4] = speed
+    -- Set rate
+    function anim:setRate(rate)
+        self[4] = rate
     end
     
     -- Set the frame and time
