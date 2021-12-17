@@ -2,134 +2,6 @@
 --@author Jacbo
 --https://github.com/Jacbo1/Public-Starfall/tree/main/SafeNet
 
--- You can extend stringstreams functions for use with this with safeNet.extend(stringstream) or creating one with safeNet.stringstream(stream, i, endian) (same params as bit.stringstream())
--- You should be able to just override net with safeNet at the top of your file ie local net = safeNet (MAKE SURE TO KEEP IT LOCAL)
--- This should be impossible to error from net burst or spamming streams and will automatically stream all data
--- Can read and write signed and unsigned int8, int16, int24, int32, and booleans, strings, players, entities, vectors, angles, chars, vmatrices, quaternions, tables, holograms, vehicles, weapons, npcs, p2m
-
--- Has all the same read and write functions as net and more
-
-
-
--- Differences include:
-
--- safeNet.start(string name, string or nil prefix)
--- name is the name of the net message but the prefix is useful for libraries implementing this one
--- as they can use their own prefixes instead of the default "snm" prefix
--- this would allow the front end code to effectively use the same net message names without interfering
--- with the library
-
--- safeNet.send(player or table or nil targets, boolean or nil unreliable) returns a net index that can be used to cancel that specific stream
--- targets can be nil to send to all clients from the server or send to the server from the client
--- targets can be a player to send to that player from the server
--- targets can be a table of players to send to from the server
-
--- safeNet.receive(string name, function or nil callback, string or nil prefix)
--- name is the name of the net message
--- callback is the callback used when a message is received
--- The prefix is useful for libraries implementing safeNet because they can use their own prefix
--- instead of the default "snm" prefix so front end code can effectively use the same
--- net message names as those in the library
-
--- safeNet.isSending() checks for out-going streams
-
--- Extended StringStreams will have all the same read and write methods as safeNet with the exception of
---   - writeUInt methods as the writeInt methods essenitally write uints already
---   - writeInt(), writeUInt(), readInt(), readUInt()
---   - writeChar(), readChar(), just use :write(c) and :read(1)
---   - There is no writeTable and readTable; writeType and readType are exactly the same
---   - writeHologram() and readHologram()
-
--- safeNet.cancel(ID) cancels the stream corresponding to this ID (removes queued items too)
-
--- safeNet.cancelAll() cancels all streams and clears the queue
-
--- writeData2() acts the same as writeData() but it saves the length too and readData2() can be called later without a byte length (this does require a byte count)
-
--- writeColor() has an optional input for whether or not it should use an extra byte to write the alpha
--- readColor() has an optional input for whether or not it should read this extra byte for the alpha
--- Both default to true
-
--- It is recommended to use writeData2 and readData2 as opposed to writeStream and readStream
--- The stream functions still work for compatibility reasons (as long as there are no null chars) but it is pointless as this library automatically streams everything when required
-
--- safeNet.writeHologram(hologram)
--- safeNet.readHologram()
-
--- safeNet.stringstream(stream, i, endian) creates a StringStream object with extended functions
-
--- safeNet.extend(stringstream) extends an existing string stream, giving it the extra functions
-
--- safeNet.setTimeout(number) sets the timeout delay for receiving networks
-
--- safeNet.setBPS(number) sets the partition size. This is the bytes per second cap
-
--- safeNet.readType(), safeNet.readTable(), StringStream:writeType(), and StringStream:readType() can be called with a callback and max quota for a coroutine instead of instant running
--- StringStream:writeType(obj, cb or nil, maxQuota or nil)
--- StringStream:readType(cb or nil, maxQuota or nil)
--- If called with no inputs it will try to isntantly write/read
--- Else it will use a coroutine and a callback
--- maxQuota can be nil and will default to math.min(quotaMax() * 0.75, 0.004)
--- safeNet reads may not work correctly after reading a type/table with a callback as it may have changed due to a different receive
-
--- safeNet.writeType, writeTable, readType, and readTable accept varargs
--- readType and readTable still allow the use of a callback with varargs
-
--- safeNet.writeBools(booleans ...) writes up to 8 booleans using the same amount of bytes (1) as safeNet.writeBool()
--- safeNet.readBools(number count) reads up to 8 booleans written with safeNet.writeBools()
-
--- safeNet.writeBits(bits ...) writes up to 8 bits using the same amount of bytes (1) as safeNet.writeBit()
--- safeNet.readBits() reads up to 8 bits written with safeNet.writeBits()
-
--- safeNet.wrapReceive(function or nil func)
--- If func is nil, deletes the safeNet.receive() wrapper
--- Otherwise it sets the function to run the callback through
--- Intended for libraries that need to overwrite the receive callback
--- Wrapper function is called with (callback, message size, ply)
-
--- safeNet.init(callback or nil) is an initialization utility and acts differently on the server and client
--- Useful for e.g. clients ping the server when are initialized or after doing something and the server responds immediately or after doing something itself
--- e.g. Clients ping the server and the server responds with a table of entities that it may or may not be able to spawn all at once
--- On the client, it pings the server when called and if a callback is provided, runs the callback with the server's response
--- On the server, a queue is kept until safeNet.init() is called. When called, it will respond to all clients with the result returned by the callback here
--- The response can be vararg
--- Example usage of safeNet.init():
---[[
---@name init example
---@author Jacbo
---@shared
---@include safeNet.txt
-
-require("safeNet.txt")
-local net = safeNet
-
-if SERVER then
-    local a = 123
-    local s = "Hello, world!"
-    print("The following will be sent to clients when they init:")
-    print(a, s)
-    
-    -- You could do stuff here that needed to be done before the ping response or respond instantly
-    timer.simple(5, function()
-        print("init")
-        
-        net.init(function(ply, arg1, arg2)
-            print("Pinged by " .. ply:getName())
-            print("arg1: ", arg1)
-            print("arg2: ", arg2)
-            return a, s -- This will be sent to the clients
-        end)
-    end)
-else -- CLIENT
-    print("Pinging...")
-    -- Client can do stuff before sending the init ping or send it now
-    net.init(function(...)
-        print("Got response")
-        print(...)
-    end, "hi", player():getName())
-end
-]]
-
 -- Might protect against the implementing code globally setting net to safeNet
 local net = net
 
@@ -790,16 +662,16 @@ encode = function(obj, stream, maxQuota)
         stream:write(seq and "1" or "0")
         if seq then
             stream:writeInt32(#obj)
-            for _, var in ipairs(obj) do encode(var, stream) end
+            for _, var in ipairs(obj) do encode(var, stream, maxQuota) end
         else
             stream:writeInt32(#table.getKeys(obj))
             for key, var in pairs(obj) do
-                stream:writeString(tostring(key))
-                encode(var, stream)
+                encode(key, stream, maxQuota)
+                encode(var, stream, maxQuota)
             end
         end
     elseif type == "number" then
-        if obj <= 2147483648 and obj % 1 == 0 then
+        if obj < 2147483648 and obj % 1 == 0 then
             stream:write("I")
             stream:writeInt32(obj)
         else
@@ -862,11 +734,11 @@ decode = function(stream, maxQuota)
         local t = {}
         if seq then
             for i = 1, count do
-                table_insert(t, decode(stream))
+                table_insert(t, decode(stream, maxQuota))
             end
         else
             for i = 1, count do
-                t[stream:readString()] = decode(stream)
+                t[decode(stream, maxQuota)] = decode(stream)
             end
         end
         return t
@@ -885,15 +757,13 @@ decode = function(stream, maxQuota)
         for row = 1, 4 do
             local rowt = {}
             for col = 1, 4 do
-                table.insert(rowt, stream:readDouble())
+                table_insert(rowt, stream:readDouble())
             end
-            table.insert(matrix, rowt)
+            table_insert(matrix, rowt)
         end
         return Matrix(matrix)
     elseif type == "N" then
         return nil
-    else
-        stream:write("0")
     end
 end
 
