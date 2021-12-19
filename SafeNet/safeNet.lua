@@ -522,7 +522,7 @@ function safeNet.extend(stringStream)
     end
     
     function stringStream:writeHologram(ent)
-        self:writeEntity6(ent)
+        self:writeEntity(ent)
     end
     
     -- Callback is optional
