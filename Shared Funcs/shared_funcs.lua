@@ -14,29 +14,8 @@ local oldNet = net
 local net = safeNet
 require("cor_wrap.txt")
 
-local net_receive = oldNet.receive
-local table_insert = table.insert
-local coroutine_create = coroutine.create
-local coroutine_status = coroutine.status
-local coroutine_resume = coroutine.resume
-local coroutine_yield = coroutine.yield
-local hook_add = hook.add
-local hook_remove = hook.remove
-local math_rand = math.rand
-local timer_simple = timer.simple
-local timer_create = timer.create
-local timer_adjust = timer.adjust
-
-local table_findNext = table.findNext
-local table_getLastKey = table.getLastKey
-local function unpack2(tbl)
-    if table_findNext(tbl) then
-        return unpack(tbl, 1, table_getLastKey(tbl))
-    end
-end
-
-local net_name = 0
-local hook_name = 0
+local net_name = 1
+local hook_name = 1
 
 local function return2(name, ply, ...)
     net.start(name, "sf")
@@ -92,7 +71,8 @@ end, "sf")
 
 -- baseFunc(args)
 net.receive("5", function(_, ply)
-    local func = getfenv()[net.readString()]
+    local s = net.readString()
+    local func = getfenv()[s]
     if func then func(net.readType()) end
 end, "sf")
 
@@ -239,6 +219,38 @@ net.receive("15", function(_, ply)
     return2(name, ply)
 end, "sf")
 
+-- Entity:method(args)
+net.receive("16", function()
+    local methods = getMethods(net.readString())
+    if methods then
+        local method = methods[net.readString()]
+        if method then
+            net.readEntity(function(ent)
+                method(ent, net.readType())
+            end)
+        end
+    end
+end, "sf")
+
+-- return Entity:method()
+net.receive("17", function(_, ply)
+    local methods = getMethods(net.readString())
+    if methods then
+        local method = methods[net.readString()]
+        if method then
+            net.readEntity(function(ent)
+                return2(
+                    name,
+                    ply,
+                    method(ent)
+                )
+            end)
+            return
+        end
+    end
+    return2(name, ply)
+end, "sf")
+
 local function run1(func_name, method, ...)
     net.start("1", "sf")
     net.writeString(func_name)
@@ -264,7 +276,7 @@ local function run2(func_name, method, ...)
     net.send(SERVER and owner() or nil)
     
     while not results do coroutine.yield() end
-    return unpack2(results, 1, table.getLastKey(results))
+    return unpack(results, 1, table.count(results))
 end
 
 local function run3(func_name)
@@ -288,7 +300,7 @@ local function run4(func_name)
     net.send(SERVER and owner() or nil)
     
     while not results do coroutine.yield() end
-    return unpack2(results, 1, table.getLastKey(results))
+    return unpack(results, 1, table.count(results))
 end
 
 local function run5(func_name, ...)
@@ -314,7 +326,7 @@ local function run6(func_name, ...)
     net.send(SERVER and owner() or nil)
     
     while not results do coroutine.yield() end
-    return unpack2(results, 1, table.getLastKey(results))
+    return unpack(results, 1, table.count(results))
 end
 
 local function run7(table_name, func_name)
@@ -340,7 +352,7 @@ local function run8(table_name, func_name)
     net.send(SERVER and owner() or nil)
     
     while not results do coroutine.yield() end
-    return unpack2(results, 1, table.getLastKey(results))
+    return unpack(results, 1, table.count(results))
 end
 
 local function run9(table_name, func_name, ...)
@@ -368,7 +380,7 @@ local function run10(table_name, func_name, ...)
     net.send(SERVER and owner() or nil)
     
     while not results do coroutine.yield() end
-    return unpack2(results, 1, table.getLastKey(results))
+    return unpack(results, 1, table.count(results))
 end
 
 local function run11(table_name, func_name, callback, ...)
@@ -394,8 +406,19 @@ local function run12(table_name, func_name, ...)
     local received = false
     net.receive(name, function()
         net.receive(name, nil, "sf")
-        ent = net.readType()
-        received = true
+        local id = net.readType()
+        if CLIENT then
+            local ss = bit.stringstream(string.char(id % 0x100, bit.rshift(id, 8) % 0x100))
+            ss:readEntity(function(e)
+                ent = e
+                timer.simple(0.1, function()
+                    received = true
+                end)
+            end)
+        else
+            ent = entity(id)
+            received = true
+        end
     end, "sf")
     
     net.start("12", "sf")
@@ -406,14 +429,6 @@ local function run12(table_name, func_name, ...)
     net.send(SERVER and owner() or nil)
     
     while not received do coroutine.yield() end
-    if ent then
-        local e
-        repeat
-            e = entity(ent)
-        until e and e:isValid()
-        coroutine.yield()
-        return e
-    end
     return ent
 end
 
@@ -433,9 +448,8 @@ local function run13(table_name, table2_name)
     net.send(SERVER and owner() or nil)
     
     while not results do coroutine.yield() end
-    return unpack2(results)
+    return unpack(results)
 end
-
 
 local function run14(method, player, ...)
     net.start("14", "sf")
@@ -462,7 +476,38 @@ local function run15(method, player, ...)
     net.send(SERVER and player or nil)
     
     while not results do coroutine.yield() end
-    return unpack2(results, 1, table.getLastKey(results))
+    return unpack(results, 1, table.count(results))
+end
+
+-- Entity:method(args)
+local function run16(class, method, ent, ...)
+    net.start("16", "sf")
+    net.writeString(class)
+    net.writeString(method)
+    net.writeEntity(ent)
+    net.writeType(...)
+    net.send(SERVER and owner() or nil)
+end
+
+-- return Entity:method()
+local function run17(class, method, ent)
+    local name = net_name
+    net_name = net_name + 1
+    local results
+    net.receive(name, function()
+        net.receive(name, nil, "sf")
+        results = {net.readType()}
+    end, "sf")
+    
+    net.start("17", "sf")
+    net.writeUInt32(name)
+    net.writeString(class)
+    net.writeString(method)
+    net.writeEntity(ent)
+    net.send(SERVER and owner() or nil)
+    
+    while not results do coroutine.yield() end
+    return unpack(results, 1, table.count(results))
 end
 
 if SERVER then
@@ -502,6 +547,7 @@ if SERVER then
     function file.readTemp(...) return run10("file", "readTemp", ...) end
     function file.write(...) return run10("file", "write", ...) end
     function file.writeTemp(...) return run10("file", "writeTemp", ...) end
+    
     function game.getSunInfo() return run8("game", "getSunInfo") end
     function game.hasFocus() return run8("game", "hasFocus") end
     function game.isSkyboxVisibleFromPoint(...) return run10("game", "isSkyboxVisibleFromPoint", ...) end
@@ -578,6 +624,159 @@ if SERVER then
     vr.getRightHandPose = vr_getRightHandPose
     vr.isPlayerInVR = vr_isPlayerInVR
     vr.usingEmptyHands = vr_usingEmptyHands
+
+local func_lookup = {
+    canPrintLocal,
+    permissionRequestSatisfied,
+    printLocal,
+    printLocalLimits,
+    printMessage,
+    printLocalLimits,
+    sendPermissionRequest,
+    setClipboardText,
+    setName,
+    setupPermissionRequest,
+    convar and convar.exists or nil,
+    convar and convar.getBool or nil,
+    convar and convar.getDefault or nil,
+    convar and convar.getFlags or nil,
+    convar and convar.getFloat or nil,
+    convar and convar.getInt or nil,
+    convar and convar.getMax or nil,
+    convar and convar.getMin or nil,
+    convar and convar.getString or nil,
+    convar and convar.hasFlag or nil,
+    file and file.append or nil,
+    file and file.asyncRead or nil,
+    file and file.createDir or nil,
+    file and file.delete or nil,
+    file and file.exists or nil,
+    file and file.existsTemp or nil,
+    file and file.find or nil,
+    file and file.findInGame or nil,
+    file and file.read or nil,
+    file and file.readTemp or nil,
+    file and file.write or nil,
+    file and file.writeTemp or nil,
+    game.getSunInfo,
+    game.hasFocus,
+    game.isSkyboxVisibleFromPoint,
+    game.serverFrameTime,
+    input and input.canLockControls or nil,
+    input and input.enableCursor or nil,
+    input and input.getCursorPos or nil,
+    input and input.getCursorVisible or nil,
+    input and input.getKeyName or nil,
+    input and input.isControlDown or nil,
+    input and input.isControlLocked or nil,
+    input and input.isKeyDown or nil,
+    input and input.isMouseDown or nil,
+    input and input.isShiftDown or nil,
+    input and input.lockControls or nil,
+    input and input.lookupBinding or nil,
+    input and input.screenToVector or nil,
+    input and input.selectWeapon or nil,
+    joystick and joystick.getAxis or nil,
+    joystick and joystick.getButton or nil,
+    joystick and joystick.getName or nil,
+    joystick and joystick.getPov or nil,
+    joystick and joystick.numAxes or nil,
+    joystick and joystick.numButtons or nil,
+    joystick and joystick.numJoysticks or nil,
+    joystick and joystick.numPovs or nil,
+    notification and notification.addLegacy or nil,
+    notification and notification.addProgress or nil,
+    notification and notification.kill or nil,
+    particle and particle.particleEmittersLeft or nil,
+    socket and socket.connect or nil,
+    socket and socket.connect4 or nil,
+    socket and socket.connect6 or nil,
+    socket and socket.tcp or nil,
+    socket and socket.tcp4 or nil,
+    socket and socket.tcp6 or nil,
+    sql and sql.query or nil,
+    sql and sql.SQLStr or nil,
+    sql and sql.tableExists or nil,
+    sql and sql.tableRemove or nil,
+}
+local id_lookup = {
+    "canPrintLocal",
+    "permissionRequestSatisfied",
+    "printLocal",
+    "printLocalLimits",
+    "printMessage",
+    "sendPermissionRequest",
+    "setClipboardText",
+    "setName",
+    "setupPermissionRequest",
+    "convar.exists",
+    "convar.getBool",
+    "convar.getDefault",
+    "convar.getFlags",
+    "convar.getFloat",
+    "convar.getInt",
+    "convar.getMax",
+    "convar.getMin",
+    "convar.getString",
+    "convar.hasFlag",
+    "file.append",
+    "file.asyncRead",
+    "file.createDir",
+    "file.delete",
+    "file.exists",
+    "file.existsTemp",
+    "file.find",
+    "file.findInGame",
+    "file.read",
+    "file.readTemp",
+    "file.write",
+    "file.writeTemp",
+    "game.getSunInfo",
+    "game.hasFocus",
+    "game.isSkyboxVisibleFromPoint",
+    "game.serverFrameTime",
+    "input.canLockControls",
+    "input.enableCursor",
+    "input.getCursorPos",
+    "input.getCursorVisible",
+    "input.getKeyName",
+    "input.isControlDown",
+    "input.isControlLocked",
+    "input.isKeyDown",
+    "input.isMouseDown",
+    "input.isShiftDown",
+    "input.lockControls",
+    "input.lookupBinding",
+    "input.screenToVector",
+    "input.selectWeapon",
+    "joystick.getAxis",
+    "joystick.getButton",
+    "joystick.getName",
+    "joystick.getPov",
+    "joystick.numAxes",
+    "joystick.numButtons",
+    "joystick.numJoysticks",
+    "joystick.numPovs",
+    "notification.addLegacy",
+    "notification.addProgress",
+    "notification.kill",
+    "particle.particleEmittersLeft",
+    "socket.connect",
+    "socket.connect4",
+    "socket.connect6",
+    "socket.tcp",
+    "socket.tcp4",
+    "socket.tcp6",
+    "sql.query",
+    "sql.SQLStr",
+    "sql.tableExists",
+    "sql.tableRemove",
+}
+for i = 1, #id_lookup do
+    id_lookup[id_lookup[i]] = i
+    id_lookup[i] = nil
+end
+
     function vr.getEyePos() return run8("vr", "getEyePos") end
     function vr.getHMDAngularVelocity() return run8("vr", "getHMDAngularVelocity") end
     function vr.getHMDVelocities() return run8("vr", "getHMDVelocities") end
@@ -604,33 +803,33 @@ if SERVER then
     function xinput.setRumble(...) run9("xinput", "setRumble", ...) end
     
     getMethods("Entity")["canDraw"] = function(...)
-        return run2("Entity", "canDraw", ...)
+        return run17("Entity", "canDraw", ...)
     end
     getMethods("Entity")["manipulateBoneAngles"] = function(...)
-        run1("Entity", "manipulateBoneAngles", ...)
+        run16("Entity", "manipulateBoneAngles", ...)
     end
     getMethods("Entity")["manipulateBoneJiggle"] = function(...)
-        run1("Entity", "manipulateBoneJiggle", ...)
+        run16("Entity", "manipulateBoneJiggle", ...)
     end
     getMethods("Entity")["manipulateBonePosition"] = function(...)
-        run1("Entity", "manipulateBonePosition", ...)
+        run16("Entity", "manipulateBonePosition", ...)
     end
     getMethods("Entity")["manipulateBoneScale"] = function(...)
-        run1("Entity", "manipulateBoneScale", ...)
+        run16("Entity", "manipulateBoneScale", ...)
     end
     getMethods("Entity")["setRenderBounds"] = function(...)
-        run1("Entity", "setRenderBounds", ...)
+        run16("Entity", "setRenderBounds", ...)
     end
     
     
     getMethods("Hologram")["setFilterMag"] = function(...)
-        run1("Hologram", "setFilterMag", ...)
+        run16("Hologram", "setFilterMag", ...)
     end
     getMethods("Hologram")["setFilterMin"] = function(...)
-        run1("Hologram", "setFilterMin", ...)
+        run16("Hologram", "setFilterMin", ...)
     end
     getMethods("Hologram")["setRenderMatrix"] = function(...)
-        run1("Hologram", "setRenderMatrix", ...)
+        run16("Hologram", "setRenderMatrix", ...)
     end
     
     
@@ -769,8 +968,19 @@ else -- CLIENT
         local received = false
         net.receive(name, function()
             net.receive(name, nil, "sf")
-            ent = net.readType()
-            received = true
+            local id = net.readType()
+            if CLIENT then
+                local ss = bit.stringstream(string.char(id % 0x100, bit.rshift(id, 8) % 0x100))
+                ss:readEntity(function(e)
+                    ent = e
+                    timer.simple(0.1, function()
+                        received = true
+                    end)
+                end)
+            else
+                ent = entity(id)
+                received = true
+            end
         end, "sf")
         
         net.start(net_target, "sf")
@@ -779,14 +989,6 @@ else -- CLIENT
         net.send(SERVER and owner() or nil)
         
         while not received do coroutine.yield() end
-        if ent then
-            local e
-            repeat
-                e = entity(ent)
-            until e and e:isValid()
-            coroutine.yield()
-            return e
-        end
         return ent
     end
 
