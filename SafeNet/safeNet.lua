@@ -437,7 +437,7 @@ end
 -- Reads a table
 safeNet.readTable = safeNet.readType
 
-local encode, decode, encodeCoroutine, decodeCoroutine
+local encode, decode
 
 -- Elseifs have been found faster than a lookup table seemingly only when mapping to functions
 function safeNet.extend(stringStream)
