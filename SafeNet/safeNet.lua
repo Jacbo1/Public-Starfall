@@ -1,6 +1,6 @@
 --@name SafeNet
 --@author Jacbo
---https://github.com/Jacbo1/Public-Starfall/tree/main/SafeNet
+--Documentation can be found at https://github.com/Jacbo1/Public-Starfall/tree/main/SafeNet
 
 -- Might protect against the implementing code globally setting net to safeNet
 local net = net
