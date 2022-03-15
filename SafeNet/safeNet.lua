@@ -222,7 +222,17 @@ safeNet.writeHologram = safeNet.writeEntity
 -- Reads a hologram
 -- callback is optional. Functions the same as net.readEntity(callback)
 function safeNet.readHologram(cb)
-    return curReceive:toHologram(cb)
+    if cb then
+        curReceive:readEntity(function(ent)
+            if ent and ent:isValid() then
+                cb(ent:toHologram())
+            else
+                cb(ent)
+            end
+        end)
+    else
+        return curReceive:readEntity():toHologram()
+    end
 end
 
 -- Writes a "bit" (mainly here for compatibility)
@@ -529,7 +539,7 @@ function safeNet.extend(stringStream)
     function stringStream:readHologram(cb)
         if cb then
             self:readEntity(function(ent)
-                if ent then
+                if ent and ent:isValid() then
                     cb(ent:toHologram())
                 else
                     cb(ent)
