@@ -1,6 +1,29 @@
 --@name SafeNet
 --@author Jacbo
---Documentation can be found at https://github.com/Jacbo1/Public-Starfall/tree/main/SafeNet
+-- Documentation can be found at https://github.com/Jacbo1/Public-Starfall/tree/main/SafeNet
+-- This library acts as a replacement for the native net library with full backwards compatibility plus new additional functions.
+-- It essentially "streams" all messages too large to send on the current tick.
+-- Instead of using actual streams though, it splits the normal messages into pieces and networks them as strings (reading and writing these strings is handled by SafeNet).
+-- This means you can "stream" from client to server and server to client at the same time.
+-- It also prevents your chips from ever crashing due to the "net burst limit exceeded" error (caused by attempting to send a net message and running out of bandwidth).
+
+-- Messages are sent and received in the order they are queued via safeNet.send().
+
+-- Messages can also have a prefix before the actual message name. This is useful for libraries to help avoid overlapping message names in implementing code.
+-- safeNet.start(prefix or nil)
+-- safeNet.receive(name, callback or nil, prefix or nil)
+-- The default prefix is "snm"
+
+-- There is also a useful "init" function that allows you to easily handle client initializations.
+-- You call it on client/server whenever you are ready and the server side version will run a callback for each time it is called on a client.
+-- The server will queue client inits until "safeNet.init()" is used on the server (Note: the function does actually have required parameters).
+-- The client side version will run a callback when it receives a response from the server.
+-- The parameters to this client callback are what the server side version returns in its callback.
+-- There is an example implementation on the GitHub page.
+-- Note: inits with entities is unreliable because it uses the normal readEntity() function. Use safeNet.readEntity(callbackFunc) for networking entities.
+-- Similar to normal Starfall, there also is a weird issue that seems specific to recent entity spawns where trying to network them too soon after creation will still pass
+-- the entity initialized check on the client but quickly go back to nil. I normally use a timer.simple() in the server init() callback and one on the client in the readEntity() callback.
+-- This just uses StringStream:readEntity(callback) which should be the same in the backend as net.readEntity(callback).
 
 -- Might protect against the implementing code globally setting net to safeNet
 local net = net
