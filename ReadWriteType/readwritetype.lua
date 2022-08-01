@@ -2,6 +2,8 @@
 --@author Jacbo
 --@client
 
+-- Docs can be found here: https://github.com/Jacbo1/Public-Starfall/tree/main/ReadWriteType
+
 if CLIENT then
     local string_char = string.char
     local file_append = file.append
