@@ -77,9 +77,13 @@ if CLIENT then
     end
     
     -- Write string (so it can be read with FileReader)
-    function FileWriter:writeString(str)
+    function FileWriter:writeString(str, length)
         local x = #str
-        self[2] = self[2] .. string_char(x % 0x100, bit_rshift(x, 8) % 0x100, bit_rshift(x, 16) % 0x100, bit_rshift(x, 24) % 0x100) .. str
+        if length then
+            self[2] = self[2] .. str
+        else
+            self[2] = self[2] .. string_char(x % 0x100, bit_rshift(x, 8) % 0x100, bit_rshift(x, 16) % 0x100, bit_rshift(x, 24) % 0x100) .. str
+        end
         if #self[2] >= self[3] then
             file_append(self[1], self[2])
             self[2] = ""
