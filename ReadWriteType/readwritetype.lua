@@ -1,4 +1,4 @@
---@name ReadWriteType
+--@name TypeReadWrite
 --@author Jacbo
 --@client
 
@@ -19,6 +19,9 @@ if CLIENT then
     FileReader = setmetatable({}, {__call = function(t, ...) return t.create(...) end})
     FileReader.__index = FileReader
     
+    FileWriter = setmetatable({}, {__call = function(t, ...) return t.create(...) end})
+    FileWriter.__index = FileWriter
+    
     -- Create a FileReader
     function FileReader.create(path)
         local data = file.read(path)
@@ -26,6 +29,19 @@ if CLIENT then
         local reader = {data, 1, #data}
         setmetatable(reader, FileReader)
         return reader
+    end
+    
+    function FileWriter.create(path, bufferSize)
+        -- {path, buffer, bufferMaxSize}
+        local writer = {path, "", bufferSize or 1024}
+        setmetatable(writer, FileWriter)
+        return writer
+    end
+    
+    -- Writes and clears the buffer
+    function FileWriter:writeBuffer()
+        file_append(self[1], self[2])
+        self[2] = ""
     end
     
     -- Returns the file text
@@ -61,13 +77,16 @@ if CLIENT then
     end
     
     -- Write string (so it can be read with FileReader)
-    function file.appendString(path, str)
+    function FileWriter:writeString(str)
         local x = #str
-        file_append(path, string_char(x % 0x100, bit_rshift(x, 8) % 0x100, bit_rshift(x, 16) % 0x100, bit_rshift(x, 24) % 0x100))
-        file_append(path, str)
+        self[2] = self[2] .. string_char(x % 0x100, bit_rshift(x, 8) % 0x100, bit_rshift(x, 16) % 0x100, bit_rshift(x, 24) % 0x100) .. str
+        if #self[2] >= self[3] then
+            file_append(self[1], self[2])
+            self[2] = ""
+        end
     end
     
-    -- Read string (input length only if it was written with file.append and not file.appendString)
+    -- Read string
     function FileReader:readString(length)
         if length then
             local str = string_sub(self[1], self[2], self[2] + length - 1)
@@ -82,8 +101,12 @@ if CLIENT then
     end
     
     -- Append up to 4 booleans
-    function file.appendBool(path, bool1, bool2, bool3, bool4)
-        file_append(path, string_char((bool1 and 1 or 0) + (bool2 and 2 or 0) + (bool3 and 4 or 0) + (bool4 and 8 or 0)))
+    function FileWriter:writeBool(bool1, bool2, bool3, bool4)
+        self[2] = self[2] .. string_char((bool1 and 1 or 0) + (bool2 and 2 or 0) + (bool3 and 4 or 0) + (bool4 and 8 or 0))
+        if #self[2] >= self[3] then
+            file_append(self[1], self[2])
+            self[2] = ""
+        end
     end
     
     -- Read 4 booleans
@@ -99,9 +122,13 @@ if CLIENT then
     -- Write an 8 bit int
     -- -127 to 128
     -- 0 to 255
-    function file.appendInt8(path, x)
+    function FileWriter:writeInt8(x)
         if x < 0 then x = x + 0x100 end
-        file_append(path, string_char(x))
+        self[2] = self[2] .. string_char(x)
+        if #self[2] >= self[3] then
+            file_append(self[1], self[2])
+            self[2] = ""
+        end
     end
     
     -- Read an 8 bit int
@@ -124,9 +151,13 @@ if CLIENT then
     -- Write a 16 bit int
     -- -32767 to 32768
     -- 0 to 65535
-    function file.appendInt16(path, x)
+    function FileWriter:writeInt16(x)
         if x < 0 then x = x + 0x10000 end
-        file_append(path, string_char(x % 0x100, bit_rshift(x, 8) % 0x100))
+        self[2] = self[2] .. string_char(x % 0x100, bit_rshift(x, 8) % 0x100)
+        if #self[2] >= self[3] then
+            file_append(self[1], self[2])
+            self[2] = ""
+        end
     end
     
     -- Read a 16 bit int
@@ -150,9 +181,13 @@ if CLIENT then
     -- Write a 24 bit int
     -- -8388607 to 8388608
     -- 0 to 16777215
-    function file.appendInt24(path, x)
+    function FileWriter:writeInt24(x)
         if x < 0 then x = x + 0x1000000 end
-        file_append(path, string_char(x % 0x100, bit_rshift(x, 8) % 0x100, bit_rshift(x, 16) % 0x100))
+        self[2] = self[2] .. string_char(x % 0x100, bit_rshift(x, 8) % 0x100, bit_rshift(x, 16) % 0x100)
+        if #self[2] >= self[3] then
+            file_append(self[1], self[2])
+            self[2] = ""
+        end
     end
     
     -- Read a 24 bit int
@@ -176,9 +211,13 @@ if CLIENT then
     -- Write a 32 bit int
     -- -2147483647 to 2147483648
     -- 0 to 4294967295
-    function file.appendInt32(path, x)
+    function FileWriter:writeInt32(x)
         if x < 0 then x = x + 0x100000000 end
-        file_append(path, string_char(x % 0x100, bit_rshift(x, 8) % 0x100, bit_rshift(x, 16) % 0x100, bit_rshift(x, 24) % 0x100))
+        self[2] = self[2] .. string_char(x % 0x100, bit_rshift(x, 8) % 0x100, bit_rshift(x, 16) % 0x100, bit_rshift(x, 24) % 0x100)
+        if #self[2] >= self[3] then
+            file_append(self[1], self[2])
+            self[2] = ""
+        end
     end
     
     -- Read a 32 bit int
@@ -200,8 +239,12 @@ if CLIENT then
     end
     
     -- Write a color
-    function file.appendColor(path, color)
-        file_append(path, string_char(color[1], color[2], color[3], color[4]))
+    function FileWriter:writeColor(color)
+        self[2] = self[2] .. string_char(color[1], color[2], color[3], color[4])
+        if #self[2] >= self[3] then
+            file_append(self[1], self[2])
+            self[2] = ""
+        end
     end
     
     -- Read a color
@@ -250,8 +293,12 @@ if CLIENT then
     end
     
     -- Write a float
-    function file.appendFloat(path, number)
-        file_append(path, packFloat(number))
+    function FileWriter:writeFloat(number)
+        self[2] = self[2] .. packFloat(number)
+        if #self[2] >= self[3] then
+            file_append(self[1], self[2])
+            self[2] = ""
+        end
     end
     
     -- Read a float
@@ -324,8 +371,12 @@ if CLIENT then
     end
     
     -- Write a double
-    function file.appendDouble(path, number)
-        file_append(path, packDouble(number))
+    function FileWriter:writeDouble(number)
+        self[2] = self[2] .. packDouble(number)
+        if #self[2] >= self[3] then
+            file_append(self[1], self[2])
+            self[2] = ""
+        end
     end
     
     -- Read a double
@@ -356,8 +407,12 @@ if CLIENT then
     end
     
     -- Write a vector
-    function file.appendVector(path, vec)
-        file_append(path, packDouble(vec[1]) .. packDouble(vec[2]) .. packDouble(vec[3]))
+    function FileWriter:writeVector(vec)
+        self[2] = self[2] .. packDouble(vec[1]) .. packDouble(vec[2]) .. packDouble(vec[3])
+        if #self[2] >= self[3] then
+            file_append(self[1], self[2])
+            self[2] = ""
+        end
     end
     
     -- Read a vector
@@ -366,8 +421,12 @@ if CLIENT then
     end
     
     -- Write an angle
-    function file.appendAngle(path, ang)
-        file_append(path, packDouble(ang[1]) .. packDouble(ang[2]) .. packDouble(ang[3]))
+    function FileWriter:writeAngle(ang)
+        self[2] = self[2] .. packDouble(ang[1]) .. packDouble(ang[2]) .. packDouble(ang[3])
+        if #self[2] >= self[3] then
+            file_append(self[1], self[2])
+            self[2] = ""
+        end
     end
     
     -- Read an angle
@@ -376,8 +435,12 @@ if CLIENT then
     end
     
     -- Write a quaternion
-    function file.appendQuaternion(path, quat)
-        file_append(path, packDouble(quat[1]) .. packDouble(quat[2]) .. packDouble(quat[3]) .. packDouble(quat[4]))
+    function FileWriter:writeQuaternion(quat)
+        self[2] = self[2] .. packDouble(quat[1]) .. packDouble(quat[2]) .. packDouble(quat[3]) .. packDouble(quat[4])
+        if #self[2] >= self[3] then
+            file_append(self[1], self[2])
+            self[2] = ""
+        end
     end
     
     -- Read a quaternion
@@ -386,14 +449,17 @@ if CLIENT then
     end
     
     -- Write a matrix
-    function file.appendMatrix(path, matrix)
-        local s = ""
+    function FileWriter:writeMatrix(matrix)
         for row = 1, 4 do
             for col = 1, 4 do
-                s = s .. packDouble(matrix:getField(row, col))
+                self[2] = self[2] .. packDouble(matrix:getField(row, col))
             end
         end
-        file_append(path, s)
+        
+        if #self[2] >= self[3] then
+            file_append(self[1], self[2])
+            self[2] = ""
+        end
     end
     
     -- Read a matrix
@@ -411,85 +477,93 @@ if CLIENT then
     
     -- Write a type
     -- ifelse found to be generally faster here than lookup table
-    local writeType
-    writeType = function(path, obj, maxQuota)
+    function FileWriter:writeType(obj, maxQuota)
         while maxQuota and quotaAverage() >= maxQuota do
             coroutine.yield()
         end
         local type = type(obj)
         if type == "table" then
             local seq = table.isSequential(obj)
-            file_append(path, "T" .. (seq and "1" or "0"))
+            self[2] = self[2] .. "T" .. (seq and "1" or "0")
             if seq then
-                file.appendInt32(path, #obj)
-                for _, var in ipairs(obj) do writeType(path, var, doYield, maxQuota) end
+                self:writeInt32(#obj)
+                for _, var in ipairs(obj) do
+                    self:writeType(var, maxQuota)
+                end
             else
-                file.appendInt32(path, #table.getKeys(obj))
+                self:writeInt32(#table.getKeys(obj))
                 for key, var in pairs(obj) do
-                    writeType(path, key, doYield, maxQuota)
-                    writeType(path, var, doYield, maxQuota)
+                    self:writeType(key, maxQuota)
+                    self:writeType(var, maxQuota)
                 end
             end
         elseif type == "number" then
             if obj <= 2147483648 and obj % 1 == 0 then
-                file_append(path, "I")
-                file.appendInt32(path, obj)
+                self[2] = self[2] .. "I"
+                self:writeInt32(obj)
             else
-                file_append(path, "D" .. packDouble(obj))
+                self[2] = self[2] .. "D" .. packDouble(obj)
             end
         elseif type == "string" then
-            file_append(path, "S")
-            file.appendString(path, obj)
+            self[2] = self[2] .. "S"
+            self:writeString(obj)
         elseif type == "boolean" then
-            file_append(path, "B" .. (obj and "1" or "0"))
+            self[2] = self[2] .. "B" .. (obj and "1" or "0")
         elseif type == "Vector" then
-            file_append(path, "V" .. packDouble(obj[1]) .. packDouble(obj[2]) .. packDouble(obj[3]))
+            self[2] = self[2] .. "V" .. packDouble(obj[1]) .. packDouble(obj[2]) .. packDouble(obj[3])
         elseif type == "Angle" then
-            file_append(path, "A" .. packDouble(obj[1]) .. packDouble(obj[2]) .. packDouble(obj[3]))
+            self[2] = self[2] .. "A" .. packDouble(obj[1]) .. packDouble(obj[2]) .. packDouble(obj[3])
         elseif type == "Color" then
-            file_append(path, "C" .. string_char(obj[1], obj[2], obj[3], obj[4]))
+            self[2] = self[2] .. "C" .. string_char(obj[1], obj[2], obj[3], obj[4])
         elseif type == "Quaternion" then
-            file_append(path, "Q" .. packDouble(obj[1]) .. packDouble(obj[2]) .. packDouble(obj[3]) .. packDouble(obj[4]))
+            self[2] = self[2] .. "Q" .. packDouble(obj[1]) .. packDouble(obj[2]) .. packDouble(obj[3]) .. packDouble(obj[4])
         elseif type == "VMatrix" then
-            local s = "M"
+            self[2] = self[2] .. "M"
             for row = 1, 4 do
                 for col = 1, 4 do
-                    s = s .. packDouble(obj:getField(row, col))
+                    self[2] = self[2] .. packDouble(obj:getField(row, col))
                 end
             end
-            file_append(path, s)
         elseif type == "nil" then
-            file_append(path, "N")
+            self[2] = self[2] .. "N"
+        end
+        
+        if #self[2] >= self[3] then
+            file_append(self[1], self[2])
+            self[2] = ""
         end
     end
     
-    -- Write a type
-    function file.appendType(path, ...)
+    -- Write multiple
+    function FileWriter:writeMulti(maxQuota, ...)
         local count = select("#", ...)
-        file.appendInt8(path, count)
+        self[2] = self[2] .. string_char(count)
         local args = {...}
         for i = 1, count do
-            writeType(path, args[i])
+            self:writeType(args[i], maxQuota)
         end
     end
     
     -- Write a table
-    file.appendTable = file.appendType
+    FileWriter.writeTable = FileWriter.writeType
     
-    -- Write a type asynchronously
-    function file.appendTypeAsync(path, maxQuota, cb, ...)
+    -- Write multi asynchronously
+    function FileWriter:writeMultiAsync(maxQuota, cb, ...)
         maxQuota = maxQuota or math.min(quotaMax() * 0.75, 0.004)
         local count = select("#", ...)
-        file.appendInt8(path, count)
+        self[2] = self[2] .. string_char(count)
         local args = {...}
+        
+        local writer = self
         
         local writeType2 = coroutine.wrap(function()
             for i = 1, count do
-                writeType(path, args[i], maxQuota)
+                writer:writeType(args[i], maxQuota)
             end
             cb()
             return true
         end)
+        
         if writeType2() ~= true then
             local running = false
             local name = "read " .. math.rand(0,1)
@@ -506,53 +580,76 @@ if CLIENT then
     end
     
     -- Write a table asynchronously
-    function file.appendTableAsync(path, tbl, maxQuota, cb)
-        file.appendTypeAsync(path, maxQuota, cb, tbl)
+    function FileWriter:writeTableAsync(maxQuota, cb, tbl)
+        maxQuota = maxQuota or math.min(quotaMax() * 0.75, 0.004)
+        local writer = self
+        
+        local writeType2 = coroutine.wrap(function()
+            writer:writeType(tbl, maxQuota)
+            cb()
+            return true
+        end)
+        
+        if writeType2() ~= true then
+            local running = false
+            local name = "read " .. math.rand(0,1)
+            hook.add("think", name, function()
+                if not running then
+                    running = true
+                    if writeType2() == true then
+                        hook.remove("think", name)
+                    end
+                    running = false
+                end
+            end)
+        end
     end
     
-    local readType
     -- elseif found to be generally faster here than a lookup table
-    readType = function(fr, maxQuota)
+    function FileReader:readType(maxQuota)
         while maxQuota and quotaAverage() >= maxQuota do
             coroutine.yield()
         end
-        local type = fr:read(1)
+        local type = self:read(1)
         if type == "T" then
-            local seq = fr:read(1) ~= "0"
-            local count = fr:readUInt32()
+            local seq = self:read(1) ~= "0"
+            local count = self:readUInt32()
             local t = {}
             if seq then
                 for i = 1, count do
-                    table_insert(t, readType(fr, maxQuota))
+                    table_insert(t, self:readType(maxQuota))
                 end
             else
                 for i = 1, count do
-                    t[readType(fr, maxQuota)] = readType(fr, maxQuota)
+                    t[self:readType(maxQuota)] = self:readType(maxQuota)
                 end
             end
             return t
-        elseif type == "I" then return fr:readInt32()
-        elseif type == "D" then return fr:readDouble()
-        elseif type == "S" then return fr:readString()
-        elseif type == "B" then return fr:read(1) ~= "0"
-        elseif type == "V" then return fr:readVector()
-        elseif type == "A" then return fr:readAngle()
-        elseif type == "C" then return fr:readColor()
-        elseif type == "Q" then return fr:readQuaternion()
-        elseif type == "M" then return fr:readMatrix()
+        elseif type == "I" then return self:readInt32()
+        elseif type == "D" then return self:readDouble()
+        elseif type == "S" then return self:readString()
+        elseif type == "B" then return self:read(1) ~= "0"
+        elseif type == "V" then return self:readVector()
+        elseif type == "A" then return self:readAngle()
+        elseif type == "C" then return self:readColor()
+        elseif type == "Q" then return self:readQuaternion()
+        elseif type == "M" then return self:readMatrix()
         elseif type == "N" then return nil end
     end
     
-    -- Read a type
-    function FileReader:readType()
+    -- Read multi
+    function FileReader:readMulti(maxQuota)
         local count = self:readUInt8()
         if count > 0 then
             local i = 0
             local recurse
+            
+            local reader = self
+            
             recurse = function()
                 i = i + 1
                 if i <= count then
-                    return readType(self), recurse()
+                    return reader:readType(maxQuota), recurse()
                 end
             end
             return recurse()
@@ -560,12 +657,10 @@ if CLIENT then
     end
     
     -- Read a table
-    function FileReader:readTable()
-        return self:readType()
-    end
+    FileReader.readTable = FileReader.readType
     
-    -- Read a type asynchronously
-    function FileReader:readTypeAsync(maxQuota, cb)
+    -- Read multi asynchronously
+    function FileReader:readMultiAsync(maxQuota, cb)
         maxQuota = maxQuota or math.min(quotaMax() * 0.75, 0.004)
         local count = self:readUInt8()
         local fr = self
@@ -577,7 +672,7 @@ if CLIENT then
                 recurse = function()
                     i = i + 1
                     if i <= count then
-                        return readType(fr, maxQuota), recurse()
+                        return fr:readType(maxQuota), recurse()
                     end
                 end
                 cb(recurse())
@@ -603,6 +698,26 @@ if CLIENT then
     
     -- Read a table asynchronously
     function FileReader:readTableAsync(maxQuota, cb)
-        self:readTypeAsync(maxQuota, cb)
+        maxQuota = maxQuota or math.min(quotaMax() * 0.75, 0.004)
+        local fr = self
+        
+        local readType2 = coroutine.wrap(function()
+            cb(fr:readType(maxQuota))
+            return true
+        end)
+        
+        if readType2() ~= true then
+            local running = false
+            local name = "read " .. math.rand(0,1)
+            hook.add("think", name, function()
+                if not running then
+                    running = true
+                    if readType2() == true then
+                        hook.remove("think", name)
+                    end
+                    running = false
+                end
+            end)
+        end
     end
 end
