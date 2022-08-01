@@ -580,7 +580,7 @@ if CLIENT then
     end
     
     -- Write a table asynchronously
-    function FileWriter:writeTableAsync(maxQuota, cb, tbl)
+    function FileWriter:writeTableAsync(tbl, maxQuota, cb)
         maxQuota = maxQuota or math.min(quotaMax() * 0.75, 0.004)
         local writer = self
         
