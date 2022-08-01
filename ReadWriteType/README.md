@@ -32,9 +32,10 @@ print(reader:readVector())
 ```
 
 ## Usage
-### Writing
+### FileWriter
 * `FileWriter(string path, number or nil maxBufferSize)` Creates a FileWriter to the file at `path`. The second parameter determines how long the buffer string can be before it is appended to the file. This helps with performance. Default is 1024.
 * `FileWriter:writeBuffer()` This **MUST** be called when finished writing. It writes the remaining data in the buffer string to the file and clears the buffer. If you do not call this, it will not finish writing.
+### Writing
 * `FileWriter:writeAngle(Angle angle)` Appends an angle using 3 doubles.
 * `FileWriter:writeBool(boolean bool1, boolean bool2, boolean bool3, boolean bool4)` Appends up to 4 booleans in 1 byte. All of the bool inputs are optional.
 * `FileWriter:writeColor(Color color)` Appends a color using 4 8 bit ints.
