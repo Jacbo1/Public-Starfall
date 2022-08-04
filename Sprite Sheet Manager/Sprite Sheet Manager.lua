@@ -1,9 +1,9 @@
 --@name Sprite sheet Manager
 --@author Jacbo
 
-if SERVER then
+-- https://github.com/Jacbo1/Public-Starfall/tree/main/Sprite%20Sheet%20Manager
 
-else -- CLIENT
+if CLIENT then
     local mngr = {}
     mngr.__index = mngr
     
@@ -19,7 +19,17 @@ else -- CLIENT
             cb = callback
         }
         setmetatable(t, mngr)
-        mat:setTextureURL("$basetexture", url, function(_, _, width, height)
+        mat:setTextureURL("$basetexture", url, function(_, _, width, height, layout)
+            if width > 1024 or height > 1024 then
+                if width > height then
+                    height = height * 1024 / width
+                    width = 1024
+                else
+                    width = width * 1024 / height
+                    height = 1024
+                end
+                layout(0, 0, width, height)
+            end
             t.width = width
             t.height = height
             t.swidth = width / columns
@@ -66,16 +76,30 @@ else -- CLIENT
         self.loading = true
         local index = #self.loadings
         
-        mat:setTextureURL("$basetexture", url, nil, function()
-            self.loadings[index] = false
-            for _, loading in ipairs(self.loadings) do
-                if loading then
-                    return
+        mat:setTextureURL("$basetexture", url,
+            function(_, _, width, height, layout)
+                if width > 1024 or height > 1024 then
+                    if width > height then
+                        height = height * 1024 / width
+                        width = 1024
+                    else
+                        width = width * 1024 / height
+                        height = 1024
+                    end
+                    layout(0, 0, width, height)
                 end
+            end,
+            function()
+                self.loadings[index] = false
+                for _, loading in ipairs(self.loadings) do
+                    if loading then
+                        return
+                    end
+                end
+                self.loading = false
+                if self.cb then self.cb(self) end
             end
-            self.loading = false
-            if self.cb then self.cb(self) end
-        end)
+        )
     end
     
     -- Draws a sprite in a rectangle
