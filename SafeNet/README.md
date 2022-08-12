@@ -35,6 +35,7 @@ end)
 #### safeNet
 SafeNet includes new functions that the native net library does not.
 All of the native net library's functions are still present, but will only be mentioned if there is a difference.
+* `safeNet.writeReceived()` Writes the entire received stringstream for bouncing messages off of server/client to client/server. This is the only function that reads but does not advanced the buffer. This means that data can be bounced off the client/server while still allowing the reading of its contents. This can be done before or after reading.
 * `safeNet.setTimeout(number seconds)` Sets the timeout for a stream. If server side, the actual timeout length used is the maximum of this and double the player's ping.
 * `safeNet.setBPS(number BPS)` Sets the maximum bytes per second the networking can use. Actual networking size is still capped by `net.getBytesLeft()`
 * `safeNet.extend(StringStream)` Extends the functions of the given StringStream object to include new ones
