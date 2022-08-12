@@ -1,5 +1,6 @@
 --@name SafeNet
 --@author Jacbo
+
 -- Documentation can be found at https://github.com/Jacbo1/Public-Starfall/tree/main/SafeNet
 -- This library acts as a replacement for the native net library with full backwards compatibility plus new additional functions.
 -- It essentially "streams" all messages too large to send on the current tick.
@@ -24,6 +25,8 @@
 -- Similar to normal Starfall, there also is a weird issue that seems specific to recent entity spawns where trying to network them too soon after creation will still pass
 -- the entity initialized check on the client but quickly go back to nil. I normally use a timer.simple() in the server init() callback and one on the client in the readEntity() callback.
 -- This just uses StringStream:readEntity(callback) which should be the same in the backend as net.readEntity(callback).
+
+-- You can safely just put local net = require("SafeNet.txt") at the top of your file so you still get at least partial syntax highlighting. That's what I always do.
 
 -- Might protect against the implementing code globally setting net to safeNet
 local net = net
@@ -51,8 +54,6 @@ safeNet = {}
 local sends = {}
 local streaming = false
 local canceling = false
-local playerQueue
-local playerCancelQueue
 local cancelQueue = false
 
 function safeNet.setTimeout(newTimeout) timeout = newTimeout end
@@ -813,27 +814,6 @@ function safeNet.wrapReceive(func)
     receiveWrapper = func
 end
 
-local function refillPlayerQueue(isCancel)
-    if SERVER then
-        if sends[1][5] then
-            local queue
-            if isCancel then
-                playerCancelQueue = {}
-                queue = playerCancelQueue
-            else
-                playerQueue = {}
-                queue = playerQueue
-            end
-            for _, ply in ipairs(sends[1][5]) do
-                if ply and ply:isValid() and ply:isPlayer() then
-                    table.insert(queue, ply)
-                end
-            end
-        elseif isCancel then playerCancelQueue = nil
-        else playerQueue = nil end
-    end
-end
-
 local bytesLeft = 0
 local netTime
 
@@ -845,7 +825,6 @@ local function cancelStream()
     end
     if not canceling then
         canceling = true
-        refillPlayerQueue(true)
     end
     local name = stream[1]
     local maxSize = math.min(bytesLeft - #name, net.getBytesLeft() - #name - 15)
@@ -884,7 +863,6 @@ local function network()
         local first = not stream[8]
         if not streaming then
             streaming = true
-            refillPlayerQueue(false)
         end
         local size = stream[3]
         local name = stream[1]
@@ -893,69 +871,29 @@ local function network()
         if size <= maxSize then
             --Last partition
             bytesLeft = bytesLeft - size - #name
-            local plys = stream[5]
-            if SERVER and plys then
-                local ply = plys[#plys]
-                if ply and ply:isValid() and ply:isPlayer() then
-                    net.start(name)
-                    net.writeBool(first) -- First
-                    net.writeBool(false) -- Cancel
-                    net.writeBool(true) -- Last
-                    net.writeUInt(size, 32)
-                    net.writeData(stream[2], size)
-                    net.send(ply, stream[4])
-                    stream[8] = true
-                end
-                table.remove(plys)
-                if #plys == 0 then
-                    table.remove(sends, 1)
-                    streaming = false
-                end
-            else
-                net.start(name)
-                net.writeBool(first)
-                net.writeBool(false)
-                net.writeBool(true)
-                net.writeUInt(size, 32)
-                net.writeData(stream[2], size)
-                net.send(nil, stream[4])
-                stream[8] = true
-                table.remove(sends, 1)
-                streaming = false
-            end
+            net.start(name)
+            net.writeBool(first)
+            net.writeBool(false)
+            net.writeBool(true)
+            net.writeUInt(size, 32)
+            net.writeData(stream[2], size)
+            net.send(stream[5], stream[4])
+            stream[8] = true
+            table.remove(sends, 1)
+            streaming = false
         else
             --Not last partition
             bytesLeft = bytesLeft - maxSize - #name
-            if playerQueue then
-                local ply = playerQueue[#playerQueue]
-                if ply and ply:isValid() and ply:isPlayer() then
-                    net.start(name)
-                    net.writeBool(first)
-                    net.writeBool(false)
-                    net.writeBool(false)
-                    net.writeUInt(maxSize, 32)
-                    net.writeData(string.sub(stream[2], 1, maxSize), maxSize)
-                    net.send(ply, stream[4])
-                    stream[8] = true
-                end
-                table.remove(playerQueue)
-                if #playerQueue == 0 then
-                    refillPlayerQueue(false)
-                    stream[2] = string.sub(stream[2], maxSize+1)
-                    stream[3] = stream[3] - maxSize
-                end
-            else
-                net.start(name)
-                net.writeBool(first)
-                net.writeBool(false)
-                net.writeBool(false)
-                net.writeUInt(maxSize, 32)
-                net.writeData(string.sub(stream[2], 1, maxSize), maxSize)
-                net.send(nil, stream[4])
-                stream[2] = string.sub(stream[2], maxSize+1)
-                stream[3] = stream[3] - maxSize
-                stream[8] = true
-            end
+            net.start(name)
+            net.writeBool(first)
+            net.writeBool(false)
+            net.writeBool(false)
+            net.writeUInt(maxSize, 32)
+            net.writeData(string.sub(stream[2], 1, maxSize), maxSize)
+            net.send(stream[5], stream[4])
+            stream[2] = string.sub(stream[2], maxSize+1)
+            stream[3] = stream[3] - maxSize
+            stream[8] = true
             stream[7] = true
             return
         end
@@ -1028,13 +966,7 @@ local netID = 1
 
 function safeNet.send(targets, unreliable)
     local name = curPrefix .. curSendName
-    local targets2
-    if SERVER and targets ~= nil then
-        if type(targets) == "Player" then targets2 = {targets}
-        elseif type(targets) == "table" then targets2 = targets
-        else error("Targets parameter is not nil/Player/Player list") end
-    end
-    table.insert(sends, {name, curSend:getString(), curSend:size(), unreliable, targets2, netID})
+    table.insert(sends, {name, curSend:getString(), curSend:size(), unreliable, targets, netID})
     curSend = nil
     network()
     netID = netID + 1
