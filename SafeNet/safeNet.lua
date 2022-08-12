@@ -416,6 +416,11 @@ function safeNet.readStream(cb)
     cb(curReceive:readData2())
 end
 
+-- Writes the entire received stringstream for bouncing messages off of server/client to client/server
+function safeNet.writeReceived()
+    curSend:write(curReceive:getString())
+end
+
 -- Writes an object(s)
 -- Accepts varargs
 function safeNet.writeType(...)
