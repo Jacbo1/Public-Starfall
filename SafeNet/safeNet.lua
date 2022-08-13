@@ -312,26 +312,26 @@ end
 
 -- Writes a vector
 function safeNet.writeVector(vec)
-    curSend:writeDouble(vec[1])
-    curSend:writeDouble(vec[2])
-    curSend:writeDouble(vec[3])
+    curSend:writeFloat(vec[1])
+    curSend:writeFloat(vec[2])
+    curSend:writeFloat(vec[3])
 end
 
 -- Reads a vector
 function safeNet.readVector()
-    return Vector(curReceive:readDouble(), curReceive:readDouble(), curReceive:readDouble())
+    return Vector(curReceive:readFloat(), curReceive:readFloat(), curReceive:readFloat())
 end
 
 -- Writes an angle
 function safeNet.writeAngle(ang)
-    curSend:writeDouble(ang[1])
-    curSend:writeDouble(ang[2])
-    curSend:writeDouble(ang[3])
+    curSend:writeFloat(ang[1])
+    curSend:writeFloat(ang[2])
+    curSend:writeFloat(ang[3])
 end
 
 -- Reads an angle
 function safeNet.readAngle()
-    return Angle(curReceive:readDouble(), curReceive:readDouble(), curReceive:readDouble())
+    return Angle(curReceive:readFloat(), curReceive:readFloat(), curReceive:readFloat())
 end
 
 -- Writes a quaternion
@@ -522,23 +522,23 @@ function safeNet.extend(stringStream)
     end
     
     function stringStream:writeVector(v)
-        self:writeDouble(v[1])
-        self:writeDouble(v[2])
-        self:writeDouble(v[3])
+        self:writeFloat(v[1])
+        self:writeFloat(v[2])
+        self:writeFloat(v[3])
     end
     
     function stringStream:readVector()
-        return Vector(self:readDouble(), self:readDouble(), self:readDouble())
+        return Vector(self:readFloat(), self:readFloat(), self:readFloat())
     end
     
     function stringStream:writeAngle(ang)
-        self:writeDouble(ang[1])
-        self:writeDouble(ang[2])
-        self:writeDouble(ang[3])
+        self:writeFloat(ang[1])
+        self:writeFloat(ang[2])
+        self:writeFloat(ang[3])
     end
     
     function stringStream:readAngle()
-        return Angle(self:readDouble(), self:readDouble(), self:readDouble())
+        return Angle(self:readFloat(), self:readFloat(), self:readFloat())
     end
     
     function stringStream:writeColor(c, hasAlpha)
@@ -691,8 +691,8 @@ function safeNet.writeStringStream(stream)
     curSend:write(stream:getString())
 end
 
--- Elseifs have been found faster in general than a lookup table seemingly only when mapping to functions
-encode = function(obj, stream, maxQuota)
+-- Elseifs have been found faster in general than a lookup table seemingly only when mapping to functions in SF
+encode = function(obj, stream, maxQuota, currentBits, bitLength)
     while maxQuota and quotaAverage() >= maxQuota do coroutine.yield() end
     local type = type(obj)
     if type == "table" then
@@ -725,12 +725,14 @@ encode = function(obj, stream, maxQuota)
         stream:write(obj and "1" or "0")
     elseif type == "Vector" then
         stream:write("V")
-        stream:writeVector(obj)
+        stream:writeFloat(obj[1])
+        stream:writeFloat(obj[2])
+        stream:writeFloat(obj[3])
     elseif type == "Angle" then
         stream:write("A")
-        stream:writeDouble(obj[1])
-        stream:writeDouble(obj[2])
-        stream:writeDouble(obj[3])
+        stream:writeFloat(obj[1])
+        stream:writeFloat(obj[2])
+        stream:writeFloat(obj[3])
     elseif type == "Color" then
         stream:write("C")
         stream:writeInt8(obj[1])
