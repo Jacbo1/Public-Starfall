@@ -328,6 +328,18 @@ function safeNet.readVector()
     return Vector(curReceive:readFloat(), curReceive:readFloat(), curReceive:readFloat())
 end
 
+-- Writes a vector with doubles
+function safeNet.writeVectorDouble(vec)
+    curSend:writeDouble(vec[1])
+    curSend:writeDouble(vec[2])
+    curSend:writeDouble(vec[3])
+end
+
+-- Reads a vector with doubles
+function safeNet.readVectorDouble()
+    return Vector(curReceive:readDouble(), curReceive:readDouble(), curReceive:readDouble())
+end
+
 -- Writes an angle
 function safeNet.writeAngle(ang)
     curSend:writeFloat(ang[1])
@@ -338,6 +350,18 @@ end
 -- Reads an angle
 function safeNet.readAngle()
     return Angle(curReceive:readFloat(), curReceive:readFloat(), curReceive:readFloat())
+end
+
+-- Writes an angle with doubles
+function safeNet.writeAngleDouble(ang)
+    curSend:writeDouble(ang[1])
+    curSend:writeDouble(ang[2])
+    curSend:writeDouble(ang[3])
+end
+
+-- Reads an angle with doubles
+function safeNet.readAngleDouble()
+    return Angle(curReceive:readDouble(), curReceive:readDouble(), curReceive:readDouble())
 end
 
 -- Writes a quaternion
@@ -439,14 +463,17 @@ function safeNet.writeType(...)
 end
 
 -- Writes a table
-safeNet.writeTable = safeNet.writeType
+function safeNet.writeTable(t, doubleVectors, doubleAngles)
+    curSend:writeInt8(1)
+    curSend:writeType(t, nil, nil, doubleVectors, doubleAngles)
+end
 
 -- Reads an object
 -- If called with no inputs it will try to isntantly read
 -- Else it will use a coroutine and a callback
 -- maxQuota can be nil and will default to math.min(quotaMax() * 0.75, 0.004)
 -- Returns varargs or runs the callback with varargs
-function safeNet.readType(cb, maxQuota)
+function safeNet.readType(cb, maxQuota, doubleVectors, doubleAngles)
     local count = curReceive:readUInt8()
     if count > 0 then
         local i = 0
@@ -462,14 +489,14 @@ function safeNet.readType(cb, maxQuota)
                     i = i + 1
                     table_insert(results, result)
                     recurse()
-                end, maxQuota)
+                end, maxQuota, doubleVectors, doubleAngles)
             end
             recurse()
         else
             recurse = function()
                 i = i + 1
                 if i <= count then
-                    return curReceive:readType(), recurse()
+                    return curReceive:readType(nil, nil, doubleVectors, doubleAngles), recurse()
                 end
             end
             return recurse()
@@ -537,6 +564,16 @@ function safeNet.extend(stringStream)
         return Vector(self:readFloat(), self:readFloat(), self:readFloat())
     end
     
+    function stringStream:writeVectorDouble(v)
+        self:writeDouble(v[1])
+        self:writeDouble(v[2])
+        self:writeDouble(v[3])
+    end
+    
+    function stringStream:readVectorDouble()
+        return Vector(self:readDouble(), self:readDouble(), self:readDouble())
+    end
+    
     function stringStream:writeAngle(ang)
         self:writeFloat(ang[1])
         self:writeFloat(ang[2])
@@ -545,6 +582,16 @@ function safeNet.extend(stringStream)
     
     function stringStream:readAngle()
         return Angle(self:readFloat(), self:readFloat(), self:readFloat())
+    end
+    
+    function stringStream:writeAngleDouble(ang)
+        self:writeDouble(ang[1])
+        self:writeDouble(ang[2])
+        self:writeDouble(ang[3])
+    end
+    
+    function stringStream:readAngleDouble()
+        return Angle(self:readDouble(), self:readDouble(), self:readDouble())
     end
     
     function stringStream:writeColor(c, hasAlpha)
@@ -623,12 +670,12 @@ function safeNet.extend(stringStream)
     -- If called with just an object it will try to isntantly write
     -- Else it will use a coroutine and a callback
     -- maxQuota can be nil and will default to math.min(quotaMax() * 0.75, 0.004)
-    function stringStream:writeType(obj, cb, maxQuota)
+    function stringStream:writeType(obj, cb, maxQuota, doubleVectors, doubleAngles)
         if cb then
             maxQuota = maxQuota or math.min(quotaMax() * 0.75, 0.004)
             local running = false
             local encode2 = coroutine.wrap(function()
-                encode(obj, self, maxQuota)
+                encode(obj, self, maxQuota, doubleVectors, doubleAngles)
                 cb()
                 return true
             end)
@@ -647,7 +694,7 @@ function safeNet.extend(stringStream)
                 end)
             end
         else
-            encode(obj, self)
+            encode(obj, self, nil, doubleVectors, doubleAngles)
         end
     end
 
@@ -655,12 +702,12 @@ function safeNet.extend(stringStream)
     -- If called with no inputs it will try to isntantly read
     -- Else it will use a coroutine and a callback
     -- maxQuota can be nil and will default to math.min(quotaMax() * 0.75, 0.004)
-    function stringStream:readType(cb, maxQuota)
+    function stringStream:readType(cb, maxQuota, doubleVectors, doubleAngles)
         if cb then
             maxQuota = maxQuota or math.min(quotaMax() * 0.75, 0.004)
             local running = false
             local decode2 = coroutine.wrap(function()
-                cb(decode(self, maxQuota))
+                cb(decode(self, maxQuota, doubleVectors, doubleAngles))
                 return true
             end)
             running = true
@@ -678,7 +725,7 @@ function safeNet.extend(stringStream)
                 end)
             end
         else
-            return decode(self)
+            return decode(self, nil, doubleVectors, doubleAngles)
         end
     end
     
@@ -698,7 +745,7 @@ function safeNet.writeStringStream(stream)
 end
 
 -- Elseifs have been found faster in general than a lookup table seemingly only when mapping to functions in SF
-encode = function(obj, stream, maxQuota)
+encode = function(obj, stream, maxQuota, doubleVectors, doubleAngles)
     while maxQuota and quotaAverage() >= maxQuota do coroutine.yield() end
     local type = type(obj)
     if type == "table" then
@@ -709,7 +756,7 @@ encode = function(obj, stream, maxQuota)
             -- Sequential
             stream:writeInt32(#obj)
             for _, var in ipairs(obj) do
-                encode(var, stream, maxQuota)
+                encode(var, stream, maxQuota, doubleVectors, doubleAngles)
             end
             return
         end
@@ -717,8 +764,8 @@ encode = function(obj, stream, maxQuota)
         -- Nonsequential
         stream:writeInt32(#table.getKeys(obj))
         for key, var in pairs(obj) do
-            encode(key, stream, maxQuota)
-            encode(var, stream, maxQuota)
+            encode(key, stream, maxQuota, doubleVectors, doubleAngles)
+            encode(var, stream, maxQuota, doubleVectors, doubleAngles)
         end
         return
     end
@@ -777,17 +824,23 @@ encode = function(obj, stream, maxQuota)
     
     if type == "Vector" then
         stream:write("V")
-        stream:writeFloat(obj[1])
-        stream:writeFloat(obj[2])
-        stream:writeFloat(obj[3])
+        if doubleVectors then
+            stream:writeVectorDouble(obj)
+            return
+        end
+        
+        stream:writeVector(obj)
         return
     end
     
     if type == "Angle" then
         stream:write("A")
-        stream:writeFloat(obj[1])
-        stream:writeFloat(obj[2])
-        stream:writeFloat(obj[3])
+        if doubleAngles then
+            stream:writeAngleDouble(obj)
+            return
+        end
+        
+        stream:writeAngle(obj)
         return
     end
     
@@ -840,7 +893,7 @@ encode = function(obj, stream, maxQuota)
 end
 
 -- Elseifs have been found faster in general than a lookup table seemingly only when mapping to functions
-decode = function(stream, maxQuota)
+decode = function(stream, maxQuota, doubleVectors, doubleAngles)
     while maxQuota and quotaAverage() >= maxQuota do coroutine.yield() end
     local type = stream:read(1)
     if type == "T" then
@@ -850,14 +903,14 @@ decode = function(stream, maxQuota)
         if seq then
             -- Sequential table
             for i = 1, count do
-                table_insert(t, decode(stream, maxQuota))
+                table_insert(t, decode(stream, maxQuota, doubleVectors, doubleAngles))
             end
             return t
         end
         
         -- Nonsequential table
         for i = 1, count do
-            t[decode(stream, maxQuota)] = decode(stream)
+            t[decode(stream, maxQuota, doubleVectors, doubleAngles)] = decode(stream, maxQuota, doubleVectors, doubleAngles)
         end
         return t
     end
@@ -869,8 +922,8 @@ decode = function(stream, maxQuota)
     if type == "D" then return stream:readDouble() end
     if type == "S" then return stream:readData2() end
     if type == "B" then return stream:read(1) ~= "0" end
-    if type == "V" then return Vector(stream:readFloat(), stream:readFloat(), stream:readFloat()) end
-    if type == "A" then return Angle(stream:readFloat(), stream:readFloat(), stream:readFloat()) end
+    if type == "V" then return doubleVectors and stream:readVectorDouble() or stream:readVector() end
+    if type == "A" then return doubleAngles and stream:readAngleDouble() or stream:readAngle() end
     if type == "C" then return Color(stream:readUInt8(), stream:readUInt8(), stream:readUInt8(), stream:readUInt8()) end
     if type == "E" then return entity(stream:readUInt16()) end
     if type == "H" then return entity(stream:readUInt16()):toHologram() end
