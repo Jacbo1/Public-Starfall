@@ -35,6 +35,10 @@ local net = net
 local BPS = 1024 * 1024 * 10
 local timeout = 10
 local bitsForMessageLength = 16
+--[[do
+    local netBurstLimit = 10000 -- Get this from net.getBytesLeft()
+    bitsForMessageLength = math.ceil(math.log(netBurstLimit + 1, 2) + 1)
+end]]
     
 local curReceive, curSend, curSendName, curPrefix
 
@@ -50,6 +54,7 @@ local table_insert = table.insert
 local null_char = string_char(0)
 local waitForEntities = true
 local bit_band = bit.band
+local math_abs = math.abs
 safeNet = {}
 
 local sends = {}
@@ -693,7 +698,7 @@ function safeNet.writeStringStream(stream)
 end
 
 -- Elseifs have been found faster in general than a lookup table seemingly only when mapping to functions in SF
-encode = function(obj, stream, maxQuota, currentBits, bitLength)
+encode = function(obj, stream, maxQuota)
     while maxQuota and quotaAverage() >= maxQuota do coroutine.yield() end
     local type = type(obj)
     if type == "table" then
@@ -701,69 +706,137 @@ encode = function(obj, stream, maxQuota, currentBits, bitLength)
         local seq = table.isSequential(obj)
         stream:write(seq and "1" or "0")
         if seq then
+            -- Sequential
             stream:writeInt32(#obj)
-            for _, var in ipairs(obj) do encode(var, stream, maxQuota) end
-        else
-            stream:writeInt32(#table.getKeys(obj))
-            for key, var in pairs(obj) do
-                encode(key, stream, maxQuota)
+            for _, var in ipairs(obj) do
                 encode(var, stream, maxQuota)
             end
+            return
         end
-    elseif type == "number" then
-        if obj < 2147483648 and obj % 1 == 0 then
-            stream:write("I")
-            stream:writeInt32(obj)
-        else
-            stream:write("D")
-            stream:writeDouble(obj)
+        
+        -- Nonsequential
+        stream:writeInt32(#table.getKeys(obj))
+        for key, var in pairs(obj) do
+            encode(key, stream, maxQuota)
+            encode(var, stream, maxQuota)
         end
-    elseif type == "string" then
+        return
+    end
+    
+    if type == "number" then
+        if obj % 1 == 0 then
+            -- Int
+            local abs = math_abs(obj)
+            
+            if abs < 128 then
+                -- 8 bits
+                stream:write("8")
+                stream:writeInt8(obj)
+                return
+            end
+            
+            if abs < 32768 then
+                -- 16 bits
+                stream:write("1")
+                stream:writeInt16(obj)
+                return
+            end
+            
+            if abs < 8388608 then
+                -- 24 bits
+                stream:write("2")
+                stream:writeInt24(obj)
+                return
+            end
+            
+            if abs < 2147483648 then
+                -- 32 bits
+                stream:write("3")
+                stream:writeInt32(obj)
+                return
+            end
+        end
+        
+        -- Double
+        stream:write("D")
+        stream:writeDouble(obj)
+        return
+    end
+    
+    if type == "string" then
         stream:write("S")
         stream:writeData2(obj)
-    elseif type == "boolean" then
+        return
+    end
+    
+    if type == "boolean" then
         stream:write("B")
         stream:write(obj and "1" or "0")
-    elseif type == "Vector" then
+        return
+    end
+    
+    if type == "Vector" then
         stream:write("V")
         stream:writeFloat(obj[1])
         stream:writeFloat(obj[2])
         stream:writeFloat(obj[3])
-    elseif type == "Angle" then
+        return
+    end
+    
+    if type == "Angle" then
         stream:write("A")
         stream:writeFloat(obj[1])
         stream:writeFloat(obj[2])
         stream:writeFloat(obj[3])
-    elseif type == "Color" then
+        return
+    end
+    
+    if type == "Color" then
         stream:write("C")
         stream:writeInt8(obj[1])
         stream:writeInt8(obj[2])
         stream:writeInt8(obj[3])
         stream:writeInt8(obj[4])
-    elseif type == "Entity" or type == "Player" or type == "Vehicle" or type == "Weapon" or type == "Npc" or type == "p2m" then
+        return
+    end
+    
+    if type == "Entity" or type == "Player" or type == "Vehicle" or type == "Weapon" or type == "Npc" or type == "p2m" then
         stream:write("E")
         stream:writeInt16(obj:entIndex())
-    elseif type == "Hologram" then
+        return
+    end
+    
+    if type == "Hologram" then
         stream:write("H")
         stream:writeInt16(obj:entIndex())
-    elseif type == "Quaternion" then
+        return
+    end
+    
+    if type == "Quaternion" then
         stream:write("Q")
         stream:writeDouble(obj[1])
         stream:writeDouble(obj[2])
         stream:writeDouble(obj[3])
         stream:writeDouble(obj[4])
-    elseif type == "VMatrix" then
+        return
+    end
+    
+    if type == "VMatrix" then
         stream:write("M")
         for row = 1, 4 do
             for col = 1, 4 do
                 stream:writeDouble(obj:getField(row, col))
             end
         end
-    elseif type == "nil" then
-        stream:write("N")
-    else
-        stream:write("0")
+        return
     end
+    
+    if type == "nil" then
+        stream:write("N")
+        return
+    end
+    
+    stream:write("0")
 end
 
 -- Elseifs have been found faster in general than a lookup table seemingly only when mapping to functions
@@ -775,26 +848,34 @@ decode = function(stream, maxQuota)
         local count = stream:readUInt32()
         local t = {}
         if seq then
+            -- Sequential table
             for i = 1, count do
                 table_insert(t, decode(stream, maxQuota))
             end
-        else
-            for i = 1, count do
-                t[decode(stream, maxQuota)] = decode(stream)
-            end
+            return t
+        end
+        
+        -- Nonsequential table
+        for i = 1, count do
+            t[decode(stream, maxQuota)] = decode(stream)
         end
         return t
-    elseif type == "I" then return stream:readInt32()
-    elseif type == "D" then return stream:readDouble()
-    elseif type == "S" then return stream:readData2()
-    elseif type == "B" then return stream:read(1) ~= "0"
-    elseif type == "V" then return Vector(stream:readDouble(), stream:readDouble(), stream:readDouble())
-    elseif type == "A" then return Angle(stream:readDouble(), stream:readDouble(), stream:readDouble())
-    elseif type == "C" then return Color(stream:readUInt8(), stream:readUInt8(), stream:readUInt8(), stream:readUInt8())
-    elseif type == "E" then return entity(stream:readUInt16())
-    elseif type == "H" then return entity(stream:readUInt16()):toHologram()
-    elseif type == "Q" then return Quaternion(stream:readDouble(), stream:readDouble(), stream:readDouble(), stream:readDouble())
-    elseif type == "M" then
+    end
+    
+    if type == "8" then return stream:readInt8() end
+    if type == "1" then return stream:readInt16() end
+    if type == "2" then return stream:readInt24() end
+    if type == "3" then return stream:readInt32() end
+    if type == "D" then return stream:readDouble() end
+    if type == "S" then return stream:readData2() end
+    if type == "B" then return stream:read(1) ~= "0" end
+    if type == "V" then return Vector(stream:readFloat(), stream:readFloat(), stream:readFloat()) end
+    if type == "A" then return Angle(stream:readFloat(), stream:readFloat(), stream:readFloat()) end
+    if type == "C" then return Color(stream:readUInt8(), stream:readUInt8(), stream:readUInt8(), stream:readUInt8()) end
+    if type == "E" then return entity(stream:readUInt16()) end
+    if type == "H" then return entity(stream:readUInt16()):toHologram() end
+    if type == "Q" then return Quaternion(stream:readDouble(), stream:readDouble(), stream:readDouble(), stream:readDouble()) end
+    if type == "M" then
         local matrix = {}
         for row = 1, 4 do
             local rowt = {}
@@ -804,9 +885,8 @@ decode = function(stream, maxQuota)
             table_insert(matrix, rowt)
         end
         return Matrix(matrix)
-    elseif type == "N" then
-        return nil
     end
+    if type == "N" then return nil end
 end
 
 ----------------------------------------
