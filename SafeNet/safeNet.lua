@@ -34,6 +34,7 @@ local net = net
 -- This is the bytes per second cap
 local BPS = 1024 * 1024 * 10
 local timeout = 10
+local bitsForMessageLength = 16
     
 local curReceive, curSend, curSendName, curPrefix
 
@@ -873,7 +874,7 @@ local function network()
         end
         local size = stream[3]
         local name = stream[1]
-        local maxSize = math.min(bytesLeft - #name, net.getBytesLeft() - #name - 15)
+        local maxSize = math.min(bytesLeft - #name, net.getBytesLeft() - #name - 10)
         if maxSize <= 0 then return end
         stream[8] = true
         if size <= maxSize then
@@ -883,7 +884,7 @@ local function network()
             net.writeBool(first)
             net.writeBool(false)
             net.writeBool(true)
-            net.writeUInt(size, 32)
+            net.writeUInt(size, bitsForMessageLength)
             net.writeData(stream[2], size)
             net.send(stream[5], stream[4])
             table.remove(sends, 1)
@@ -895,7 +896,7 @@ local function network()
             net.writeBool(first)
             net.writeBool(false)
             net.writeBool(false)
-            net.writeUInt(maxSize, 32)
+            net.writeUInt(maxSize, bitsForMessageLength)
             net.writeData(string.sub(stream[2], 1, maxSize), maxSize)
             net.send(stream[5], stream[4])
             stream[2] = string.sub(stream[2], maxSize+1)
@@ -943,7 +944,7 @@ function safeNet.receive(name, cb, prefix)
             end
             local last = net.readBool()
             if receiving then
-                local length = net.readUInt(32)
+                local length = net.readUInt(bitsForMessageLength)
                 data = data .. net.readData(length)
                 if last then
                     data = bit.decompress(data)
