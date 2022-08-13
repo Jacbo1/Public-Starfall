@@ -875,6 +875,7 @@ local function network()
         local name = stream[1]
         local maxSize = math.min(bytesLeft - #name, net.getBytesLeft() - #name - 15)
         if maxSize <= 0 then return end
+        stream[8] = true
         if size <= maxSize then
             --Last partition
             bytesLeft = bytesLeft - size - #name
@@ -885,7 +886,6 @@ local function network()
             net.writeUInt(size, 32)
             net.writeData(stream[2], size)
             net.send(stream[5], stream[4])
-            stream[8] = true
             table.remove(sends, 1)
             streaming = false
         else
@@ -900,7 +900,6 @@ local function network()
             net.send(stream[5], stream[4])
             stream[2] = string.sub(stream[2], maxSize+1)
             stream[3] = stream[3] - maxSize
-            stream[8] = true
             stream[7] = true
             return
         end
@@ -922,7 +921,6 @@ function safeNet.receive(name, cb, prefix)
     local name2 = prefix .. name
     if cb then
         local data = ""
-        local size = 0
         local receiving = false
         net.receive(name2, function(_, ply)
             local timeout2
@@ -933,7 +931,6 @@ function safeNet.receive(name, cb, prefix)
             else
                 timer.create("sn stream timeout " .. name2, timeout2, 1, function()
                     data = ""
-                    size = 0
                 end)
             end
             local first = net.readBool()
@@ -941,25 +938,23 @@ function safeNet.receive(name, cb, prefix)
             local cancel = net.readBool()
             if cancel then
                 data = ""
-                size = 0
                 timer.remove("sn stream timeout " .. name2)
                 return
             end
             local last = net.readBool()
             if receiving then
                 local length = net.readUInt(32)
-                size = size + length
                 data = data .. net.readData(length)
+                data = bit.decompress(data)
                 if last then
                     timer.remove("sn stream timeout " .. name2)
                     curReceive = safeNet.stringstream(data)
                     if receiveWrapper then
-                        receiveWrapper(cb, size, ply)
+                        receiveWrapper(cb, #data, ply)
                     else
-                        cb(size, ply)
+                        cb(#data, ply)
                     end
                     data = ""
-                    size = 0
                 end
             end
             if last then receiving = false end
@@ -973,7 +968,8 @@ local netID = 1
 
 function safeNet.send(targets, unreliable)
     local name = curPrefix .. curSendName
-    table.insert(sends, {name, curSend:getString(), curSend:size(), unreliable, targets, netID})
+    local data = bit.compress(curSend:getString())
+    table.insert(sends, {name, data, #data, unreliable, targets, netID})
     curSend = nil
     network()
     netID = netID + 1
