@@ -1007,7 +1007,7 @@ local function network()
         end
         local size = stream[3]
         local name = stream[1]
-        local maxSize = math.min(bytesLeft - #name, net.getBytesLeft() - #name - 10)
+        local maxSize = math.min(bytesLeft - #name, net.getBytesLeft() - #name - 15)
         if maxSize <= 0 then return end
         stream[8] = true
         if size <= maxSize then
