@@ -975,7 +975,7 @@ function safeNet.send(targets, unreliable)
     local canCompress = false
     local compressed = bit.compress(data)
     if compressed then
-        if bit.decompress(compressed) == data then
+        if bit.decompress(compressed) then
             data = compressed
             canCompress = true
         end
