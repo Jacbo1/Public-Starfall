@@ -895,7 +895,6 @@ local function network()
             net.writeBool(first)
             net.writeBool(false)
             net.writeBool(false)
-            net.writeBool(stream[9])
             net.writeUInt(maxSize, 32)
             net.writeData(string.sub(stream[2], 1, maxSize), maxSize)
             net.send(stream[5], stream[4])
@@ -946,10 +945,8 @@ function safeNet.receive(name, cb, prefix)
             if receiving then
                 local length = net.readUInt(32)
                 data = data .. net.readData(length)
-                if net.readBool() then
-                    data = bit.decompress(data)
-                end
                 if last then
+                    data = bit.decompress(data)
                     timer.remove("sn stream timeout " .. name2)
                     curReceive = safeNet.stringstream(data)
                     if receiveWrapper then
@@ -971,16 +968,8 @@ local netID = 1
 
 function safeNet.send(targets, unreliable)
     local name = curPrefix .. curSendName
-    local data = curSend:getString()
-    local canCompress = false
-    local compressed = bit.compress(data)
-    if compressed then
-        if bit.decompress(compressed) then
-            data = compressed
-            canCompress = true
-        end
-    end
-    table.insert(sends, {name, data, #data, unreliable, targets, netID, nil, nil, canCompress})
+    local data = bit.compress(curSend:getString())
+    table.insert(sends, {name, data, #data, unreliable, targets, netID})
     curSend = nil
     network()
     netID = netID + 1
