@@ -51,6 +51,7 @@ local string_byte = string.byte
 local string_find = string.find
 local string_replace = string.replace
 local table_insert = table.insert
+local table_remove = table.remove
 local null_char = string_char(0)
 local waitForEntities = true
 local bit_band = bit.band
@@ -1010,6 +1011,20 @@ local function network()
         local maxSize = math.min(bytesLeft - #name, net.getBytesLeft() - #name - 15)
         if maxSize <= 0 then return end
         stream[8] = true
+        
+        if type(stream[5]) == "table" then
+            local i = 1
+            local targets = stream[5]
+            while i <= #targets do
+                local ply = targets[i]
+                if not ply or not ply:isValid() or not ply:isPlayer() then
+                    table_remove(targets, i)
+                    continue
+                end
+                i = i + 1
+            end
+        end
+        
         if size <= maxSize then
             --Last partition
             bytesLeft = bytesLeft - size - #name
