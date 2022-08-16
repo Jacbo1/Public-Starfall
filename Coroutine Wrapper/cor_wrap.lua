@@ -43,7 +43,7 @@ function corWrapHook(func, hookname, ...)
     local cor = coroutine_create(func)
     coroutine_resume(cor, ...)
     if coroutine_status(cor) ~= "dead" then
-        local name = "shared funcs base " .. hook_name
+        local name = "corwrap " .. hook_name
         hook_name = hook_name + 1
         hook_add(hookname, name, function()
             local status = coroutine_status(cor)
