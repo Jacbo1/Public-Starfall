@@ -745,7 +745,7 @@ function safeNet.writeStringStream(stream)
     curSend:write(stream:getString())
 end
 
--- Elseifs have been found faster in general than a lookup table seemingly only when mapping to functions in SF
+-- Specifically in Starfall, Elseifs have been found faster in general than a lookup table seemingly only when mapping to functions in SF
 encode = function(obj, stream, maxQuota, doubleVectors, doubleAngles)
     while maxQuota and quotaAverage() >= maxQuota do coroutine.yield() end
     local type = type(obj)
@@ -893,7 +893,7 @@ encode = function(obj, stream, maxQuota, doubleVectors, doubleAngles)
     stream:write("0")
 end
 
--- Elseifs have been found faster in general than a lookup table seemingly only when mapping to functions
+-- Specifically in Starfall, Elseifs have been found faster in general than a lookup table seemingly only when mapping to functions
 decode = function(stream, maxQuota, doubleVectors, doubleAngles)
     while maxQuota and quotaAverage() >= maxQuota do coroutine.yield() end
     local type = stream:read(1)
