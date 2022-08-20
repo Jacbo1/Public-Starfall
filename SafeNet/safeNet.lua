@@ -745,7 +745,7 @@ function safeNet.writeStringStream(stream)
     curSend:write(stream:getString())
 end
 
--- Specifically in Starfall, elseifs have been found to be faster in general than a lookup table when mapping to functions
+-- Elseifs have been found faster in general than a lookup table seemingly only when mapping to functions in SF
 encode = function(obj, stream, maxQuota, doubleVectors, doubleAngles)
     while maxQuota and quotaAverage() >= maxQuota do coroutine.yield() end
     local type = type(obj)
@@ -893,7 +893,7 @@ encode = function(obj, stream, maxQuota, doubleVectors, doubleAngles)
     stream:write("0")
 end
 
--- Specifically in Starfall, elseifs have been found to be faster in general than a lookup table when mapping to functions
+-- Elseifs have been found faster in general than a lookup table seemingly only when mapping to functions
 decode = function(stream, maxQuota, doubleVectors, doubleAngles)
     while maxQuota and quotaAverage() >= maxQuota do coroutine.yield() end
     local type = stream:read(1)
@@ -1034,6 +1034,7 @@ local function network()
             net.writeBool(true)
             net.writeUInt(size, bitsForMessageLength)
             net.writeData(stream[2], size)
+            net.writeBool(stream[9])
             net.send(stream[5], stream[4])
             table.remove(sends, 1)
             streaming = false
@@ -1095,7 +1096,9 @@ function safeNet.receive(name, cb, prefix)
                 local length = net.readUInt(bitsForMessageLength)
                 data = data .. net.readData(length)
                 if last then
-                    data = bit.decompress(data)
+                    if net.readBool() then
+                        data = bit.decompress(data)
+                    end
                     timer.remove("sn stream timeout " .. name2)
                     curReceive = safeNet.stringstream(data)
                     if receiveWrapper then
@@ -1115,10 +1118,15 @@ end
 
 local netID = 1
 
-function safeNet.send(targets, unreliable)
+function safeNet.send(targets, unreliable, compress)
     local name = curPrefix .. curSendName
-    local data = bit.compress(curSend:getString())
-    table.insert(sends, {name, data, #data, unreliable, targets, netID})
+    if compress or compress == nil then
+        compress = true
+    else
+        compress = false
+    end
+    local data = compress and bit.compress(curSend:getString()) or curSend:getString()
+    table.insert(sends, {name, data, #data, unreliable, targets, netID, nil, nil, compress})
     curSend = nil
     network()
     netID = netID + 1
@@ -1183,7 +1191,7 @@ if SERVER then
     local function respond(ply, ...)
         safeNet.start("sninit", "")
         safeNet.writeType(...)
-        safeNet.send(ply)
+        safeNet.send(ply, nil, false)
     end
     
     function safeNet.init(callback)
@@ -1221,7 +1229,7 @@ else -- CLIENT
         
         safeNet.start("sninit", "")
         safeNet.writeType(...)
-        safeNet.send()
+        safeNet.send(nil, nil, false)
     end
 end
 
