@@ -1,4 +1,4 @@
---@name TypeReadWrite
+--@name ReadWriteType
 --@author Jacbo
 --@client
 
