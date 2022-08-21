@@ -1120,13 +1120,18 @@ local netID = 1
 
 function safeNet.send(targets, unreliable, compress)
     local name = curPrefix .. curSendName
-    if compress or compress == nil then
-        compress = true
-    else
-        compress = false
+    local data = curSend:getString()
+    local length = #data
+    if compress then
+        local s = bit.compress(curSend:getString())
+        if s then
+            data = s
+            length = #data
+        else
+            compress = false
+        end
     end
-    local data = compress and bit.compress(curSend:getString()) or curSend:getString()
-    table.insert(sends, {name, data, #data, unreliable, targets, netID, nil, nil, compress})
+    table.insert(sends, {name, data, length, unreliable, targets, netID, nil, nil, compress or false})
     curSend = nil
     network()
     netID = netID + 1
