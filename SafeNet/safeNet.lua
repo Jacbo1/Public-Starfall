@@ -472,7 +472,7 @@ end
 -- Reads an object
 -- If called with no inputs it will try to isntantly read
 -- Else it will use a coroutine and a callback
--- maxQuota can be nil and will default to math.min(quotaMax() * 0.75, 0.004)
+-- maxQuota can be nil and will default to math.min(quotaMax() * 0.5, 0.004)
 -- Returns varargs or runs the callback with varargs
 function safeNet.readType(cb, maxQuota, doubleVectors, doubleAngles)
     local count = curReceive:readUInt8()
@@ -698,10 +698,10 @@ function safeNet.extend(stringStream)
     -- Writes an object
     -- If called with just an object it will try to isntantly write
     -- Else it will use a coroutine and a callback
-    -- maxQuota can be nil and will default to math.min(quotaMax() * 0.75, 0.004)
+    -- maxQuota can be nil and will default to math.min(quotaMax() * 0.5, 0.004)
     function stringStream:writeType(obj, cb, maxQuota, doubleVectors, doubleAngles)
         if cb then
-            maxQuota = maxQuota or math.min(quotaMax() - 0.0005, 0.004)
+            maxQuota = maxQuota or math.min(quotaMax() * 0.5, 0.004)
             local running = false
             local encode2 = coroutine.wrap(function()
                 encode(obj, self, maxQuota, doubleVectors, doubleAngles)
@@ -730,10 +730,10 @@ function safeNet.extend(stringStream)
     -- Reads an object
     -- If called with no inputs it will try to isntantly read
     -- Else it will use a coroutine and a callback
-    -- maxQuota can be nil and will default to math.min(quotaMax() * 0.75, 0.004)
+    -- maxQuota can be nil and will default to math.min(quotaMax() * 0.5, 0.004)
     function stringStream:readType(cb, maxQuota, doubleVectors, doubleAngles)
         if cb then
-            maxQuota = maxQuota or math.min(quotaMax() - 0.0005, 0.004)
+            maxQuota = maxQuota or math.min(quotaMax() * 0.5, 0.004)
             local running = false
             local decode2 = coroutine.wrap(function()
                 cb(decode(self, maxQuota, doubleVectors, doubleAngles))
