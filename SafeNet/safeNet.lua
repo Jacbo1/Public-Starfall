@@ -13,6 +13,7 @@
 -- It also prevents your chips from ever crashing due to the "net burst limit exceeded" error (caused by attempting to send a net message and running out of bandwidth).
 
 -- Messages are sent and received in the order they are queued via safeNet.send().
+-- safeNet.readEntity(callback) and stringStream:readEntity(callback) now utilize the NetworkEntityCreated hook to wait for the entity to become fully valid before running the cllback.
 
 -- Messages can also have a prefix before the actual message name. This is useful for libraries to help avoid overlapping message names in implementing code.
 -- safeNet.start(prefix or nil)
