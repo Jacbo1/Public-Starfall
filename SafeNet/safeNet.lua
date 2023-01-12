@@ -1,6 +1,10 @@
 --@name SafeNet
 --@author Jacbo
 
+-- To include add this to the top of your file (remove the space between --@ and include):
+-- --@ include https://raw.githubusercontent.com/Jacbo1/Public-Starfall/main/SafeNet/safeNet.lua as SafeNet
+-- local net = require("SafeNet")
+
 -- Documentation can be found at https://github.com/Jacbo1/Public-Starfall/tree/main/SafeNet
 -- This library acts as a replacement for the native net library with full backwards compatibility plus new additional functions.
 -- It essentially "streams" all messages too large to send on the current tick.
@@ -22,11 +26,6 @@
 -- The parameters to this client callback are what the server side version returns in its callback.
 -- There is an example implementation on the GitHub page.
 -- Note: inits with entities is unreliable because it uses the normal readEntity() function. Use safeNet.readEntity(callbackFunc) for networking entities.
--- Similar to normal Starfall, there also is a weird issue that seems specific to recent entity spawns where trying to network them too soon after creation will still pass
--- the entity initialized check on the client but quickly go back to nil. I normally use a timer.simple() in the server init() callback and one on the client in the readEntity() callback.
--- This just uses StringStream:readEntity(callback) which should be the same in the backend as net.readEntity(callback).
-
--- You can safely just put local net = require("SafeNet.txt") at the top of your file so you still get at least partial syntax highlighting. That's what I always do.
 
 -- Might protect against the implementing code globally setting net to safeNet
 local net = net
