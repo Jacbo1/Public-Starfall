@@ -514,6 +514,34 @@ local encode, decode, encodeCoroutine, decodeCoroutine
 
 -- Elseifs have been found faster than a lookup table seemingly only when mapping to functions
 function safeNet.extend(stringStream)
+    local oldReadEntity = stringStream.readEntity
+    
+    local queuedEntities = {}
+    
+    hook.add("NetworkEntityCreated", "SafeNet NetworkEntityCreated", function(ent)
+        local cb = queuedEntities[ent]
+        if cb then
+            cb(ent)
+            queuedEntities[ent] = nil
+        end
+    end)
+    
+    function stringStream:readEntity(cb)
+        if cb then
+            oldReadEntity(self, function(ent)
+                if ent and ent:isValid() then
+                    cb(ent)
+                    return
+                end
+                
+                queuedEntities[ent] = cb
+            end)
+            return
+        end
+        
+        return oldReadEntity(self)
+    end
+    
     function stringStream:writeData2(str)
         self:writeInt32(#str)
         self:write(str)
@@ -673,7 +701,7 @@ function safeNet.extend(stringStream)
     -- maxQuota can be nil and will default to math.min(quotaMax() * 0.75, 0.004)
     function stringStream:writeType(obj, cb, maxQuota, doubleVectors, doubleAngles)
         if cb then
-            maxQuota = maxQuota or math.min(quotaMax() * 0.75, 0.004)
+            maxQuota = maxQuota or math.min(quotaMax() - 0.0005, 0.004)
             local running = false
             local encode2 = coroutine.wrap(function()
                 encode(obj, self, maxQuota, doubleVectors, doubleAngles)
@@ -705,7 +733,7 @@ function safeNet.extend(stringStream)
     -- maxQuota can be nil and will default to math.min(quotaMax() * 0.75, 0.004)
     function stringStream:readType(cb, maxQuota, doubleVectors, doubleAngles)
         if cb then
-            maxQuota = maxQuota or math.min(quotaMax() * 0.75, 0.004)
+            maxQuota = maxQuota or math.min(quotaMax() - 0.0005, 0.004)
             local running = false
             local decode2 = coroutine.wrap(function()
                 cb(decode(self, maxQuota, doubleVectors, doubleAngles))
@@ -747,7 +775,7 @@ end
 
 -- Elseifs have been found faster in general than a lookup table seemingly only when mapping to functions in SF
 encode = function(obj, stream, maxQuota, doubleVectors, doubleAngles)
-    while maxQuota and quotaAverage() >= maxQuota do coroutine.yield() end
+    while maxQuota and cpuUsed() >= maxQuota do coroutine.yield() end
     local type = type(obj)
     if type == "table" then
         stream:write("T")
@@ -895,7 +923,7 @@ end
 
 -- Elseifs have been found faster in general than a lookup table seemingly only when mapping to functions
 decode = function(stream, maxQuota, doubleVectors, doubleAngles)
-    while maxQuota and quotaAverage() >= maxQuota do coroutine.yield() end
+    while maxQuota and cpuUsed() >= maxQuota do coroutine.yield() end
     local type = stream:read(1)
     if type == "T" then
         local seq = stream:read(1) ~= "0"
