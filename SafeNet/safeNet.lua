@@ -512,11 +512,9 @@ safeNet.readTable = safeNet.readType
 
 local encode, decode, encodeCoroutine, decodeCoroutine
 
--- Elseifs have been found faster than a lookup table seemingly only when mapping to functions
+local queuedEntities = {}
 function safeNet.extend(stringStream)
     local oldReadEntity = stringStream.readEntity
-    
-    local queuedEntities = {}
     
     hook.add("NetworkEntityCreated", "SafeNet NetworkEntityCreated", function(ent)
         local cb = queuedEntities[ent]
