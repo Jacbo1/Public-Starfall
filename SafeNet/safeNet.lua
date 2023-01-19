@@ -513,16 +513,16 @@ safeNet.readTable = safeNet.readType
 local encode, decode, encodeCoroutine, decodeCoroutine
 
 local queuedEntities = {}
+hook.add("NetworkEntityCreated", "SafeNet NetworkEntityCreated", function(ent)
+    local cb = queuedEntities[ent]
+    if cb then
+        cb(ent)
+        queuedEntities[ent] = nil
+    end
+end)
+
 function safeNet.extend(stringStream)
     local oldReadEntity = stringStream.readEntity
-    
-    hook.add("NetworkEntityCreated", "SafeNet NetworkEntityCreated", function(ent)
-        local cb = queuedEntities[ent]
-        if cb then
-            cb(ent)
-            queuedEntities[ent] = nil
-        end
-    end)
     
     function stringStream:readEntity(cb)
         if cb then
