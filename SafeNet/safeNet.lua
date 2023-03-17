@@ -63,6 +63,8 @@ local streaming = false
 local canceling = false
 local cancelQueue = false
 
+function safeNet.isStreaming() return streaming end
+
 function safeNet.setTimeout(newTimeout) timeout = newTimeout end
 
 -- Sets the bytes per second cap
