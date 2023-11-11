@@ -1,11 +1,11 @@
 --@name Spawn Blocking
 --@author Jacbo
---@include cor_wrap.txt
+--@include https://raw.githubusercontent.com/Jacbo1/Public-Starfall/main/Coroutine%20Wrapper/cor_wrap.lua as CorWrap
 -- https://github.com/Jacbo1/Public-Starfall/tree/main/Spawn%20Blocking
 -- cor_wrap can be found here https://github.com/Jacbo1/Public-Starfall/tree/main/Coroutine%20Wrapper
 -- This library blocks execution until the prop/effect/hologram/sound/component/ragdoll/seat/sent can be created
 -- It overwrites the original functions
-require("cor_wrap.txt")
+require("CorWrap")
 
 local coroutine_yield = function()
     try(coroutine.yield,
