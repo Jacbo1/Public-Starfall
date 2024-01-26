@@ -884,13 +884,13 @@ encode = function(obj, stream, maxQuota, doubleVectors, doubleAngles)
     
     if type == "Entity" or type == "Player" or type == "Vehicle" or type == "Weapon" or type == "Npc" or type == "p2m" then
         stream:write("E")
-        stream:writeInt16(obj:isValid() and obj:entIndex() ? -1)
+        stream:writeInt16(obj:isValid() and obj:entIndex() or -1)
         return
     end
     
     if type == "Hologram" then
         stream:write("H")
-        stream:writeInt16(obj:isValid() and obj:entIndex() ? -1)
+        stream:writeInt16(obj:isValid() and obj:entIndex() or -1)
         return
     end
     
