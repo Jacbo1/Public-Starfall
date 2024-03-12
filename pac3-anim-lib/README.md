@@ -3,10 +3,8 @@ Parse Pac3 custom animations and play them on holograms.
 ## How to use
 ```lua
 --@name Anim Lib Test
---@include anim_lib.txt
+--@include https://raw.githubusercontent.com/Jacbo1/Public-Starfall/main/pac3-anim-lib/anim_lib.lua
 --@client
-
-require("anim_lib.txt")
 
 local holo = holograms.create(chip():getPos(), Angle(), "models/player/barney.mdl")
 local myAnim = anim.create(holo, json.decode(file.read("myAnim.txt")))
