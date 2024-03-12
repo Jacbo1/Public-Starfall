@@ -1,6 +1,8 @@
 --@name Animation Library
 --@author Jacbo
 -- https://github.com/Jacbo1/Public-Starfall/tree/main/pac3-anim-lib
+-- To include add this to the top of your file (remove the space between --@ and include):
+-- --@ include https://raw.githubusercontent.com/Jacbo1/Public-Starfall/main/pac3-anim-lib/anim_lib.lua as anim_lib
 
 if CLIENT then
     local table_getKeys = table.getKeys
