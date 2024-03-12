@@ -1,6 +1,8 @@
 --@name Better Coroutines
 --@author Jacbo
 -- https://github.com/Jacbo1/Public-Starfall/tree/main/Better%20Coroutines
+-- To include add this to the top of your file and omit the require() (remove the space between --@ and include):
+-- --@ include https://raw.githubusercontent.com/Jacbo1/Public-Starfall/main/Better%20Coroutines/Better%20Coroutines.lua as corLib
 
 -- When you require this, it returns BetterCoroutine
 -- e.g. local corLib = require("better_coroutines.txt")
