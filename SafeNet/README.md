@@ -10,8 +10,8 @@ Made to be a one and done net library replacement, SafeNet will automatically st
 
 ## Usage
 * Optional: Add `local net = safeNet` to the top of the file. This is especially useful for retroactively adding the library to older files since it has full backwards compatibility.
-* Add `--@include safeNet.txt` to the top of the file and `require("safeNet.txt")` in the code
-* When `require("safeNet.txt")` is ran, it creates a global table named `safeNet` which has all of the functions
+* Add `--@include https://raw.githubusercontent.com/Jacbo1/Public-Starfall/main/SafeNet/safeNet.lua as SafeNet` to the top of the file and `require("SafeNet")` in the code
+* When `require("SafeNet")` is ran, it creates a global table named `safeNet` which has all of the functions
 * Identical usage as native net utils i.e.
 ```lua
 safeNet.start("hi")
