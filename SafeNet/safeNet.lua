@@ -26,7 +26,12 @@
 -- The client side version will run a callback when it receives a response from the server.
 -- The parameters to this client callback are what the server side version returns in its callback.
 -- There is an example implementation on the GitHub page.
--- Note: inits with entities is unreliable because it uses the normal readEntity() function. Use safeNet.readEntity(callbackFunc) for networking entities.
+
+-- There is a special synchronized variables table at safeNet.syncVars.
+-- This table is automatically synchronized between all clients and the server.
+-- Clients will automatically fetch this table during initialization.
+-- There is an example of this on the GitHub page.
+
 
 -- Might protect against the implementing code globally setting net to safeNet
 local net = net
@@ -62,8 +67,6 @@ local sends = {}
 local streaming = false
 local canceling = false
 local cancelQueue = false
-
-function safeNet.isStreaming() return streaming end
 
 function safeNet.setTimeout(newTimeout) timeout = newTimeout end
 
@@ -513,7 +516,6 @@ end
 safeNet.readTable = safeNet.readType
 
 local encode, decode, encodeCoroutine, decodeCoroutine
-
 local queuedEntities = {}
 hook.add("NetworkEntityCreated", "SafeNet NetworkEntityCreated", function(ent)
     local cb = queuedEntities[ent]
@@ -1198,6 +1200,169 @@ end
 
 ------------------------------------------------------------------
 
+-- Variable synchronization
+-- safeNet.syncVars.yourVariableName = { abc = 123 }
+-- print(safeNet.syncVars.yourVariableName)
+--    Creates a variable that is synchronized across the server and all clients.
+--    Setting the value automatically synchronizes the variable. It will only
+--    network new values.
+-- safeNet.resyncVar(key)
+--    Forces the variable's current value to be sent out to the server and clients.
+--    The key is the variable name.
+-- safeNet.addSyncVarCallback(key, callback) or safeNet.addSyncVarCallback(key, name, callback)
+--    Adds a callback that is run when the variable changes.
+-- safeNet.removeSyncVarCallback(key) or safeNet.removeSyncVarCallback(key, name)
+--    Removes the callback that is run when the variable changes.
+
+local deepEquals
+deepEquals = function(a, b)
+    local typea = type(a)
+    local typeb = type(b)
+    if typea ~= typeb then return false end
+
+    if typea == 'table' then
+        local keysa = table.getKeys(a)
+        local keysb = table.getKeys(b)
+        if #keysa ~= #keysb then return false end
+        
+        if (not table.isSequential(a) or not table.isSequential(b)) and not deepEquals(keysa, keysb) then
+            -- Keys don't match
+            return false
+        end
+
+        for k, v in pairs(a) do
+            if not deepEquals(v, b[k]) then
+                -- Value not equal
+                return false
+            end
+        end
+
+        return true
+    end
+
+    return a == b
+end
+
+
+local syncedVars = {}
+local svars = {
+    __index = function(_, key)
+        return syncedVars[key]
+    end,
+
+    __newindex = function(_, key, value)
+        local changed = not deepEquals(syncedVars[key], value)
+        syncedVars[key] = value
+        if changed then
+            -- Value changed
+            safeNet.resyncVar(key)
+        end
+    end
+}
+
+setmetatable(svars, svars)
+
+local svarCallbacks = {}
+local function runSyncVarCallbacks(key)
+    local callbacks = svarCallbacks[key]
+    if callbacks then
+        -- Run change callbacks
+        local value = syncedVars[key]
+        for _, cb in pairs(callbacks) do
+            cb(value)
+        end
+    end
+end
+
+safeNet.syncVars = svars
+function safeNet.resyncVar(key, ply)
+    -- Send out updated sync var value
+    safeNet.start("snsvar", "")
+    if SERVER then
+        -- Write nil player
+        if ply and ply:isValid() and ply:isPlayer() then
+            safeNet.writeBool(true)
+            safeNet.writeEntity(ply)
+        else
+            safeNet.writeBool(false)
+        end
+    end
+    safeNet.writeString(key)
+    safeNet.writeType(syncedVars[key])
+    safeNet.send()
+end
+
+safeNet.receive("snsvar", function(_, ply)
+    -- Receive updated sync var value
+    if CLIENT and safeNet.readBool() and player() == safeNet.readEntity() then
+        -- This clients ent the update so skip
+        return
+    end
+    
+    local key = safeNet.readString()
+    local value = safeNet.readType()
+    if deepEquals(syncedVars[key], value) then
+        -- Same value
+        return
+    end
+    
+    syncedVars[key] = value
+    runSyncVarCallbacks(key)
+    
+    if SERVER then
+        -- Network new value to other clients
+        safeNet.resyncVar(key, ply)
+    end
+end, "")
+
+-- Sync var callbacks
+-- Callbacks are called with (variable value)
+function safeNet.addSyncVarCallback(key, name, callback)
+    local realName = name
+    if not callback then
+        callback = name
+        realName = ""
+    end
+    
+    local tbl = svarCallbacks[key]
+    if not tbl then
+        svarCallbacks[key] = {}
+        tbl = svarCallbacks[key]
+    end
+    
+    tbl[realName] = callback
+end
+
+function safeNet.removeSyncVarCallback(key, name)
+    name = name or ""
+    
+    local tbl = svarCallbacks[key]
+    if not tbl then return end
+    table.remove(tbl, name)
+end
+
+-- Get sync var values
+if SERVER then
+    safeNet.receive("snsvarinit", function(_, ply)
+        safeNet.start("snsvarinit", "")
+        safeNet.writeTable(syncedVars)
+        safeNet.send(ply)
+    end, "")
+else -- CLIENT
+    safeNet.start("snsvarinit", "")
+    safeNet.send()
+    
+    safeNet.receive("snsvarinit", function()
+        local vars = safeNet.readTable()
+        for k, v in pairs(vars) do
+            syncedVars[k] = v
+            runSyncVarCallbacks(k)
+        end
+    end, "")
+end
+
+------------------------------------------------------------------
+
 -- Initialization utilities
 -- Useful for e.g. clients ping the server when are initialized or after doing something and the server responds immediately or after doing something itself
 -- e.g. Clients ping the server and the server responds with a table of entities that it may or may not be able to spawn all at once
@@ -1210,6 +1375,7 @@ end
 --  safeNet.init(callback, args ...)
 --      Pings the server with the varargs provided by args (they are optional)
 --      If a callback is provided and is not nil, it will be called with cb(args ...) which will be the arguments returned from the server
+
 if SERVER then
     local plyQueue = {}
     safeNet.receive("sninit", function(_, ply)

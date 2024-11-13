@@ -53,10 +53,9 @@ All of the native net library's functions are still present, but will only be me
 * `safeNet.writeBits(numbers ...)` writes up to 8 bits in the same amount of bytes (1) as `safeNet.writeBit()`. If a number is 0, a 0 is written; otherwise a 1 is written.
 * `safeNet.readBits(number count)` reads up to 8 booleans written by `safeNet.writeBools()`. Returns varargs.
 * `safeNet.writeVectorDouble(Vector v)` Writes a Vector using doubles instead of floats.
-* `safeNet.writeAngleDouble(Angle a)` Writes an Angle using doubles instead of floats.
+* `safeNet.writeAngleDouble(Angle a)` Writes an Angle using doubles instead of floats.  
 
-[//]: # (Hello)
-  Read and write functions
+Read and write functions
 * `safeNet.writeColor(Color, hasAlpha or nil)` This is not new but if `hasAlpha` is given and is false, it will not include the alpha channel, thus using 3 bytes instead of 4. Defaults to writing alpha
 * `safeNet.readColor(hasAlpha or nil)` This is not new but if `hasAlpha` is given and false, it will not attempt to read a 4th byte for the alpha. Defaults to reading alpha
 * `safeNet.writeData(string, size or nil)` This is not new but the size paramater is now optional. It is not optional for `safeNet.readData()` however
@@ -66,10 +65,9 @@ All of the native net library's functions are still present, but will only be me
 * `safeNet.readQuat()` Reads a quaternion
 * `safeNet.writeStringStream(StringStream)` Writes the given StringStream object. Identical to using `safeNet.writeData(ss:getString())`
 * `safeNet.writeHologram(Hologram)` Writes a hologram
-* `safeNet.readHologram(callback or nil)` Reads a hologram. If on client and a callback is provided, it will wait for the entity to become valid like net.readEntity(callback)
+* `safeNet.readHologram(callback or nil)` Reads a hologram. If on client and a callback is provided, it will wait for the entity to become valid like net.readEntity(callback)  
 
-[//]: # (Hello)
-  Note that it is preferable to use the following functions for writing and reading ints as opposed to `safeNet.writeInt(number n, number bits)`, `safeNet.writeUInt(number n, number bits)`, `safeNet.readInt(number n, number bits)`, or `safeNet.readUInt(number n, number bits)` as those functions call these after checking which one to use.
+Note that it is preferable to use the following functions for writing and reading ints as opposed to `safeNet.writeInt(number n, number bits)`, `safeNet.writeUInt(number n, number bits)`, `safeNet.readInt(number n, number bits)`, or `safeNet.readUInt(number n, number bits)` as those functions call these after checking which one to use.
 * `safeNet.writeInt8(number)` Writes a signed 8 bit int: -127 -> 128
 * `safeNet.readInt8()` Reads a signed 8 bit int: -127 -> 128
 * `safeNet.writeUInt8(number)` Writes an unsigned 8 bit int: 0 -> 255
@@ -86,6 +84,12 @@ All of the native net library's functions are still present, but will only be me
 * `safeNet.readInt32()` Reads a signed 32 bit int: -2147483647 -> 2147483648
 * `safeNet.writeUInt32(number)` Writes an unsigned 32 bit int: 0 -> 4294967295
 * `safeNet.readUInt32()` Reads an unsigned 32 bit int: 0 -> 4294967295
+
+Synchronized variables
+* `safeNet.syncVars.yourVariableName = { abc = 123 }` or `safeNet.syncVars["your-variable-name"] = "foobar"` and `print(safeNet.syncVars.yourVariableName)` or `local abc = safeNet.syncVars["your-variable-name"]` Lets you use variables that are synchronized across the server and all clients. Setting the value will automatically network the new value if it is different. It will recursively check tables for equality.
+* `safeNet.resyncVar(key)` Will force the current value of the variable with the given key/name to be networked to the server and clients. You will need to use this if you for example update a value in a synchronized table variable e.g. `safeNet.syncVars.myVar.someValue = 123`.
+* `safeNet.addSyncVarCallback(key, name or nil, callback)` Will add a callback function that is run when a new value for the synchronized variable is received. This only runs when the new value is networked and not set locally. Passes the new variable value to the callback function. Can be called as `safeNet.addSyncVarCallback(key, callback)`.
+* `safeNet.removeSyncVarCallback(key, name or nil)` Will remove a callback added by `safeNet.addSycVarCallback(key, name or nil, callback)`. Can be called as `safeNet.removeSyncVarCallback(key)`.
 <br>
 
 #### StringStream
@@ -123,11 +127,9 @@ All of the native StringStream functions are present, but only new ones will be 
 ```lua
 --@name init example
 --@author Jacbo
---@shared
---@include safeNet.txt
+--@include https://raw.githubusercontent.com/Jacbo1/Public-Starfall/main/SafeNet/safeNet.lua as SafeNet
 
-require("safeNet.txt")
-local net = safeNet
+local net = require("SafeNet")
 
 if SERVER then
     local a = 123
@@ -153,5 +155,50 @@ else -- CLIENT
         print("Got response")
         print(...)
     end, "hi", player():getName())
+end
+```
+
+## safeNet.syncVars example
+```lua
+--@name Synchronized Variables Example
+--@author Jacbo
+--@include https://raw.githubusercontent.com/Jacbo1/Public-Starfall/main/SafeNet/safeNet.lua as SafeNet
+
+require("SafeNet")
+local net = safeNet
+
+if SERVER then
+    net.syncVars.abc = "Hello, world!"
+    
+    net.addSyncVarCallback("abc", function(value)
+        print(value)
+        if type(value) == "table" then
+            printTable(net.syncVars.abc)
+        end
+    end)
+    
+    timer.simple(3, function()
+        net.syncVars.abc = {
+            abc = 123,
+            hi = "bye",
+            list = {
+                true,
+                false
+            }
+        }
+    end)
+else -- CLIENT
+    net.addSyncVarCallback("abc", function(value)
+        print(value)
+        if type(value) == "table" then
+            printTable(net.syncVars.abc)
+        end
+    end)
+    
+    if player() == owner() then
+        timer.simple(6, function()
+            net.syncVars.abc = true
+        end)
+    end
 end
 ```
