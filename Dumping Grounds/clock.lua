@@ -1,3 +1,5 @@
+-- Connect to screen
+
 --@name Clock
 --@author Jacbo
 --@client

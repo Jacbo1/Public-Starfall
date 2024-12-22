@@ -1,4 +1,5 @@
 -- Sudoku solver that uses Wave Function Collapse
+-- https://www.youtube.com/watch?v=oBTkGgIgQe8
 
 --@name Sudoku Wave Function Collapse
 --@author Jacbo

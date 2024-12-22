@@ -1,3 +1,5 @@
+-- Spawn a models/hunter/blocks/cube05x05x05.mdl and view it from the other side of a screen
+
 --@name 3D to Screen 2D
 --@author Jacbo
 --@shared

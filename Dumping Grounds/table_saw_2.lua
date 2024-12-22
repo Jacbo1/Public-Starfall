@@ -1,5 +1,6 @@
 -- Better version but requires "Proper Clipping" addon: https://steamcommunity.com/sharedfiles/filedetails/?id=2256491552
 -- Cuts props in half that pass over the saw blade.
+-- https://youtu.be/BDM0O5-ksa0
 
 --@name Table Saw 2
 --@author Jacbo

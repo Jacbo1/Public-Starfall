@@ -1,4 +1,5 @@
 -- Connect to and activate HUD
+-- https://www.youtube.com/watch?v=qDAqr54EZYg
 
 --@name Lockpicking
 --@author Jacbo

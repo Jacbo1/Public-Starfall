@@ -11,7 +11,8 @@
 --Convert it to 6 separate images with https://matheowis.github.io/HDRI-to-CubeMap/
 --URL order from images: image 2, image 1, image 3, image 4, image 6, image 5
 local randomURLs = true
-local size = 32
+local size = 32 -- Screen plate size
+local vomitmode = false -- :)
 if SERVER then
     local urlInterval = 60
     local screens = find.byClass("starfall_screen", function(ent)
@@ -193,67 +194,67 @@ else --CLIENT
         end
         center = net.readVector()
     end)
-        --local length = 47.45 * 32 / 2
-        local minU = 1 / 1024
-        local minV = 1 / 1024
-        local maxU = 1023 / 1024
-        local maxV = 1023 / 1024
-        --[[hook.add("think", "", function()
-            local min = 32 * 47.45 / 2
-            local max = 25000 / 2
-            length = (math.sin(timer.systime()) / 2 + 0.5) * (max - min) + min
-        end)]]
-        --center = center + Vector(0,0,Length)
-        if true then
-        hook.add("render", "", function()
-            center = eyePos()
-            local screen = render.getScreenEntity()
-            render.pushMatrix(Matrix(), true)
-            render.setMaterial(images[1])
-            render.draw3DQuadUV(
-                {-length + center[1], length + center[2], -length + center[3], minU, minV},
-                {length + center[1], length + center[2], -length + center[3], maxU, minV},
-                {length + center[1], -length + center[2], -length + center[3], maxU, maxV},
-                {-length + center[1], -length + center[2], -length + center[3], minU, maxV}
-            )
-            render.setMaterial(images[2])
-            render.draw3DQuadUV(
-                {-length + center[1], -length + center[2], length + center[3], minU, minV},
-                {-length + center[1], length + center[2], length + center[3], maxU, minV},
-                {-length + center[1], length + center[2], -length + center[3], maxU, maxV},
-                {-length + center[1], -length + center[2], -length + center[3], minU, maxV}
-            )
-            render.setMaterial(images[3])
-            render.draw3DQuadUV(
-                {-length + center[1], -length + center[2], -length + center[3], maxU, maxV},
-                {length + center[1], -length + center[2], -length + center[3], minU, maxV},
-                {length + center[1], -length + center[2], length + center[3], minU, minV},
-                {-length + center[1], -length + center[2], length + center[3], maxU, minV}
-            )
-            render.setMaterial(images[4])
-            render.draw3DQuadUV(
-                {length + center[1], -length + center[2], -length + center[3], maxU, maxV},
-                {length + center[1], length + center[2], -length + center[3], minU, maxV},
-                {length + center[1], length + center[2], length + center[3], minU, minV},
-                {length + center[1], -length + center[2], length + center[3], maxU, minV}
-            )
-            render.setMaterial(images[5])
-            render.draw3DQuadUV(
-                {-length + center[1], length + center[2], length + center[3], minU, minV},
-                {length + center[1], length + center[2], length + center[3], maxU, minV},
-                {length + center[1], length + center[2], -length + center[3], maxU, maxV},
-                {-length + center[1], length + center[2], -length + center[3], minU, maxV}
-            )
-            render.setMaterial(images[6])
-            render.draw3DQuadUV(
-                {-length + center[1], -length + center[2], length + center[3], minU, minV},
-                {length + center[1], -length + center[2], length + center[3], maxU, minV},
-                {length + center[1], length + center[2], length + center[3], maxU, maxV},
-                {-length + center[1], length + center[2], length + center[3], minU, maxV}
-            )
-            render.popMatrix()
-        end)
-        else
+    --local length = 47.45 * 32 / 2
+    local minU = 1 / 1024
+    local minV = 1 / 1024
+    local maxU = 1023 / 1024
+    local maxV = 1023 / 1024
+    --[[hook.add("think", "", function()
+        local min = 32 * 47.45 / 2
+        local max = 25000 / 2
+        length = (math.sin(timer.systime()) / 2 + 0.5) * (max - min) + min
+    end)]]
+    --center = center + Vector(0,0,Length)
+    if not vomitmode then
+    hook.add("render", "", function()
+        center = eyePos()
+        local screen = render.getScreenEntity()
+        render.pushMatrix(Matrix(), true)
+        render.setMaterial(images[1])
+        render.draw3DQuadUV(
+            {-length + center[1], length + center[2], -length + center[3], minU, minV},
+            {length + center[1], length + center[2], -length + center[3], maxU, minV},
+            {length + center[1], -length + center[2], -length + center[3], maxU, maxV},
+            {-length + center[1], -length + center[2], -length + center[3], minU, maxV}
+        )
+        render.setMaterial(images[2])
+        render.draw3DQuadUV(
+            {-length + center[1], -length + center[2], length + center[3], minU, minV},
+            {-length + center[1], length + center[2], length + center[3], maxU, minV},
+            {-length + center[1], length + center[2], -length + center[3], maxU, maxV},
+            {-length + center[1], -length + center[2], -length + center[3], minU, maxV}
+        )
+        render.setMaterial(images[3])
+        render.draw3DQuadUV(
+            {-length + center[1], -length + center[2], -length + center[3], maxU, maxV},
+            {length + center[1], -length + center[2], -length + center[3], minU, maxV},
+            {length + center[1], -length + center[2], length + center[3], minU, minV},
+            {-length + center[1], -length + center[2], length + center[3], maxU, minV}
+        )
+        render.setMaterial(images[4])
+        render.draw3DQuadUV(
+            {length + center[1], -length + center[2], -length + center[3], maxU, maxV},
+            {length + center[1], length + center[2], -length + center[3], minU, maxV},
+            {length + center[1], length + center[2], length + center[3], minU, minV},
+            {length + center[1], -length + center[2], length + center[3], maxU, minV}
+        )
+        render.setMaterial(images[5])
+        render.draw3DQuadUV(
+            {-length + center[1], length + center[2], length + center[3], minU, minV},
+            {length + center[1], length + center[2], length + center[3], maxU, minV},
+            {length + center[1], length + center[2], -length + center[3], maxU, maxV},
+            {-length + center[1], length + center[2], -length + center[3], minU, maxV}
+        )
+        render.setMaterial(images[6])
+        render.draw3DQuadUV(
+            {-length + center[1], -length + center[2], length + center[3], minU, minV},
+            {length + center[1], -length + center[2], length + center[3], maxU, minV},
+            {length + center[1], length + center[2], length + center[3], maxU, maxV},
+            {-length + center[1], length + center[2], length + center[3], minU, maxV}
+        )
+        render.popMatrix()
+    end)
+    else
         local corners = {
             {
                 Vector(-length, length, -length),
@@ -405,5 +406,5 @@ else --CLIENT
             )
             render.popMatrix()
         end)
-        end
+    end
 end

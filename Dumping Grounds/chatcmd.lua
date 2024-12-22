@@ -3,9 +3,6 @@
 --@shared
 --@include safeNet.txt
 
---require("safeNet.txt")
---local net = safeNet
-
 --[[
     Can be used client side or server side
     Listeners are client side

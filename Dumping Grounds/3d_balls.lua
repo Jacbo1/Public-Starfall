@@ -1,3 +1,5 @@
+-- Verlet Integration physics in 3D
+
 --@name 3D Balls
 --@author Jacbo
 --@shared

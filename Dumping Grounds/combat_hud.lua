@@ -1,3 +1,5 @@
+-- Not totally practical but shows an animated ammo count for your active weapon
+
 --@name Combat HUD
 --@author Jacbo
 --@client

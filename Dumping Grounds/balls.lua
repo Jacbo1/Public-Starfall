@@ -1,3 +1,8 @@
+-- Verlet Integration physics in 2D
+-- Connect to screen
+-- Moving or rotating the screen will affect the balls
+-- https://www.youtube.com/watch?v=I8vO6NsrLlA
+
 --@name Balls
 --@author Jacbo
 --@shared

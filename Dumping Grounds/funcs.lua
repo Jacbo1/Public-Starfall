@@ -3,13 +3,7 @@
 --@name Funcs
 --@author Jacbo
 
-local function getNet()
-    if safeNet then
-        return safeNet
-    end
-    return net
-end
-local net = getNet()
+local net = safeNet or net
 
 funcs = {}
 

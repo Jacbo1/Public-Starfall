@@ -1,3 +1,5 @@
+-- https://www.youtube.com/watch?v=GY8gq-EZhF4
+
 --@name Cloth
 --@author Jacbo
 --@server
@@ -55,7 +57,7 @@ corWrap(function()
             points[pin2id][3] = true
         end
         
-        //points[1][3] = true
+        --points[1][3] = true
         
         local gravity = physenv.getGravity() * game.getTickInterval()^2
         local iterations = 1
@@ -70,7 +72,7 @@ corWrap(function()
                     p[1] = p[1] * 2 - p[2] + gravity
                     p[2] = pre
                 end
-                //p[4]:setPos(p[1])
+                --p[4]:setPos(p[1])
             end
             
             for i = 1, iterations do

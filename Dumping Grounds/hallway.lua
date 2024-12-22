@@ -1,7 +1,9 @@
+-- Spawn 6 4x4 plate screens then spawn this chip
+
 --@name Hallway
 --@author Jacbo
 
-local size = 4
+local size = 4 -- Screen plate size
 if SERVER then
     local urlInterval = 60
     local screens = find.byClass("starfall_screen", function(ent)
