@@ -2,10 +2,10 @@
 --@author Jacbo
 -- https://github.com/Jacbo1/Public-Starfall/tree/main/Better%20Coroutines
 -- To include add this to the top of your file and omit the require() (remove the space between --@ and include):
--- --@ include https://raw.githubusercontent.com/Jacbo1/Public-Starfall/main/Better%20Coroutines/Better%20Coroutines.lua as corLib
+-- --@ include https://raw.githubusercontent.com/Jacbo1/Public-Starfall/main/Better%20Coroutines/Better%20Coroutines.lua as CorLib
 
 -- When you require this, it returns BetterCoroutine
--- e.g. local corLib = require("better_coroutines.txt")
+-- e.g. local corLib = require("CorLib")
 -- You use this exactly the same as coroutine.wrap() except it will
 -- automatically restart when called after it has finished.
 -- corLib.wrap(func) returns a coroutineObject

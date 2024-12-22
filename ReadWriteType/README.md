@@ -5,10 +5,10 @@ Read and write more than just strings to files. Can read and write Angle, boolea
 ```lua
 --@name Test
 --@author Jacbo
---@include readwritetype.txt
+--@include https://raw.githubusercontent.com/Jacbo1/Public-Starfall/refs/heads/main/ReadWriteType/readwritetype.lua as ReadWriteType
 --@client
 
-require("readwritetype.txt")
+require("ReadWriteType")
 
 if player() ~= owner() then return end
 

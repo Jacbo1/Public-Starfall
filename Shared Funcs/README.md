@@ -8,10 +8,10 @@ The original syntax remains entirely unchanged except for requirements enforced 
 ### Example
 This example spawns a table above each player's head and breaks it. Because of the spawn burst rate limit it will not work on every player of course.
 ```lua
---@include shared_funcs.txt
+--@include https://raw.githubusercontent.com/Jacbo1/Public-Starfall/refs/heads/main/Shared%20Funcs/shared_funcs.lua as SharedFuncs
 --@shared
 
-require("shared_funcs.txt")
+require("SharedFuncs")
 corWrap(function()
     if CLIENT then
         local ent = prop.create(player():getPos() + Vector(0,0,100), Angle(), "models/props_c17/FurnitureTable001a.mdl")
@@ -21,15 +21,15 @@ end)
 ```
 The same example but with [Spawn Blocking](https://github.com/Jacbo1/Public-Starfall/tree/main/Spawn%20Blocking) will spawn all props.
 ```lua
---@include safeNet.txt
---@include spawn_blocking.txt
---@include shared_funcs.txt
+--@include https://raw.githubusercontent.com/Jacbo1/Public-Starfall/main/SafeNet/safeNet.lua as SafeNet
+--@include https://raw.githubusercontent.com/Jacbo1/Public-Starfall/refs/heads/main/Spawn%20Blocking/spawn_blocking.lua as SpawnBlocking
+--@include https://raw.githubusercontent.com/Jacbo1/Public-Starfall/refs/heads/main/Shared%20Funcs/shared_funcs.lua as SharedFuncs
 --@shared
 
-require("safeNet.txt")
+require("SafeNet")
 local net = safeNet
-require("spawn_blocking.txt")
-require("shared_funcs.txt")
+require("SpawnBlocking")
+require("SharedFuncs")
 corWrap(function()
     if CLIENT then
         local ent = prop.create(player():getPos() + Vector(0,0,100), Angle(), "models/props_c17/FurnitureTable001a.mdl")

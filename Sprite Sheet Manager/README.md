@@ -16,9 +16,9 @@ The Java program is not needed and is used for converting gifs into sprite sheet
 --@name Sprite Manager Example
 --@author Jacbo
 --@client
---@include sprites/spritemngr.txt
+--@include https://raw.githubusercontent.com/Jacbo1/Public-Starfall/refs/heads/main/Sprite%20Sheet%20Manager/Sprite%20Sheet%20Manager.lua as SpriteManager
 
-local manager = require("sprites/spritemngr.txt")
+local manager = require("SpriteManager")
 local delay = 0.05
 local frameCount = 8^2*3
 

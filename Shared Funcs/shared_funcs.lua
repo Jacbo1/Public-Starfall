@@ -4,15 +4,13 @@
 --@name Shared Funcs
 --@author Jacbo
 --@shared
--- SafeNet can be found at https://github.com/Jacbo1/Public-Starfall/tree/main/SafeNet
---@include safeNet.txt
--- Coroutine Wrapper can be found at https://github.com/Jacbo1/Public-Starfall/tree/main/Coroutine%20Wrapper
---@include cor_wrap.txt
+--@include https://raw.githubusercontent.com/Jacbo1/Public-Starfall/main/SafeNet/safeNet.lua as SafeNet
+--@include https://raw.githubusercontent.com/Jacbo1/Public-Starfall/refs/heads/main/Coroutine%20Wrapper/cor_wrap.lua as CorWrap
 
-require("safeNet.txt")
+require("SafeNet")
 local oldNet = net
 local net = safeNet
-require("cor_wrap.txt")
+require("CorWrap")
 
 local net_name = 1
 local hook_name = 1

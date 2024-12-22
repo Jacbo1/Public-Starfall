@@ -4,9 +4,9 @@ An improved version of `coroutine.wrap()`. It functions identically to `coroutin
 ```lua
 --@name Better Coroutines Example
 --@author Jacbo
---@include better_coroutines.txt
+--@include https://raw.githubusercontent.com/Jacbo1/Public-Starfall/main/Better%20Coroutines/Better%20Coroutines.lua as CorLib
 
-local corLib = require("better_coroutines.txt")
+local corLib = require("CorLib")
 
 local my_func = corLib.wrap(function(arg1, arg2, ...)
     print("Arg1: ", arg1)

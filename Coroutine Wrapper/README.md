@@ -17,11 +17,11 @@ This example uses [Spawn Blocking](https://github.com/Jacbo1/Public-Starfall/tre
 --@name Coroutine Wrapper and Spawn Blocking Example
 --@author Jacbo
 --@shared
---@include safeNet.txt
---@include spawn_blocking.txt
-require("safeNet.txt")
+--@include https://raw.githubusercontent.com/Jacbo1/Public-Starfall/main/SafeNet/safeNet.lua as SafeNet
+--@include https://raw.githubusercontent.com/Jacbo1/Public-Starfall/refs/heads/main/Spawn%20Blocking/spawn_blocking.lua as SpawnBlocking
+require("SafeNet")
 local net = safeNet
-require("spawn_blocking.txt")
+require("SpawnBlocking")
 
 if SERVER then
     corWrap(function()
