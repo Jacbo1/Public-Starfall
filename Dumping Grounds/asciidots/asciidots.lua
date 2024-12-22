@@ -1,5 +1,6 @@
 -- This is an interpreter for the esolang "AsciiDots". This video explains it well: https://www.youtube.com/watch?v=2BvBk-WHHZQ
 -- Connect to screen
+-- Read Dumping Grounds\asciidots\files\README.md and don't forget about the files
 
 --@name AsciiDots
 --@author Jacbo
