@@ -1,5 +1,4 @@
 -- Spawn this on a prop and watch the mesh get distorted. Affects the physics mesh too.
--- Works on vehicles I'm pretty sure.
 
 --@name Mesh Stretcher
 --@author Jacbo
