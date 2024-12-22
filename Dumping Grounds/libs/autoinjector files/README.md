@@ -5,7 +5,7 @@ These files should be placed in `GarrysMod\garrysmod\lua\sfinject`.
 
 ---
 **IMPORTANT**  
-You must add the following to `garrysmod\cfg\autoexec.cfg`:
+You must add the following to `GarrysMod\garrysmod\cfg\autoexec.cfg`:
 ```
 alias "sfinject" "lua_openscript_cl sfinject/inject.lua"
 ```
