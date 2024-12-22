@@ -1,6 +1,6 @@
 This folder contains files needed for or used by `libs\autoinjector.txt`.  
 **LEAVE ALL FILES IN THIS FOLDER AS `.lua`!**  
-These files should be placed in `GarrysMod\garrysmod\lua\sfinject`.  
+These files should be placed in `GarrysMod\garrysmod\lua\sfinject\`.  
 `inject.lua` is required and all other files are injectors which `inject.lua` is able to call.
 
 ---
