@@ -34,6 +34,7 @@ funcs.linkToClosestScreen = function(cb)
     end
 end
 
+-- This isn't uniformly distributed and I dislike this now
 funcs.randInCircle = function(centerx, centery, radius)
     local r = math.rand(0, radius)
     return centerx + math.cos(math.rand(-math.pi, math.pi)) * r,
@@ -332,6 +333,7 @@ funcs.processVisMesh = function(meshTable, quotaMax, cb)
     end)
 end
 
+-- Rescales the dimensions to fit inside the new dimensions while maintaining aspect ratio
 funcs.rescale = function(oldWidth, oldHeight, newWidth, newHeight)
     local ratio = math.min(newWidth / oldWidth, newHeight / oldHeight)
     return oldWidth * ratio,
