@@ -1,0 +1,3 @@
+This folder contains AsciiDots code for `asciidots\asciidots.txt`. The `asciidots\files\asciidots\` folder should be moved to `GarrysMod\garrysmod\data\sf_filedata\asciidots\`.
+
+I don't remember all of these files so some of them may be scripts that require input which I don't think my interpreter supports. Remember, you're in the Dumping Grounds folder so don't expect a high standard of recollection.

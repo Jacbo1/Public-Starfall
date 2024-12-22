@@ -1,0 +1,6 @@
+--@name AsciiDots Additions
+--@author Jacob
+
+"F": floors the dot's value
+"C": ceils the dot's value
+"R": rounds the dot's value

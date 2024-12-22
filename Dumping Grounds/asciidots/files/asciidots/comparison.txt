@@ -1,0 +1,9 @@
+   /-$_"Comp 2: bottom is 0: "$#&
+/--~-$_"Comp 2: bottom is not 0: "$#&
+|  !
+|  \--\
+|     |
+\5#*--/
+/--/ /-$_"Comp 1: bottom is not 0: "$#&
+.-#2-~-$_"Comp 1: bottom is 0: "$#&
+\-#1-/
