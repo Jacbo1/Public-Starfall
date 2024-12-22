@@ -15,3 +15,6 @@ Libraries can be loaded via URL by adapting the following example:
 require("SafeNet")
 ```
 To get this URL, go to the file on GitHub, click the "Raw" button in the top right of the code pane, and this will open the raw file where you can use the link of that page in the `--@include`.
+
+---
+**Note:** A few files have `libs\autoinjector.txt` as a dependency. Please read [libs\autoinjector files\README.md](libs\autoinjector files\README.md) before using this as it requires a small amount of first time setup.
