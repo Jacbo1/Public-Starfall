@@ -1,7 +1,5 @@
 -- This script is for injecting cslua into starfall.
--- IMPORTANT: You must add the following to autoexec.cfg:
---    alias "sfinject" "lua_openscript_cl sfinject/inject.lua"
--- This is because concmd blocks the lua_openscript_cl command
+-- IMPORTANT: Read Dumping Grounds\libs\autoinjector files\README.md
 
 --@name Autoinjector
 --@author Jacbo
