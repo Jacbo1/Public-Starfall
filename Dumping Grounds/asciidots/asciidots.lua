@@ -1,5 +1,4 @@
 -- This is an interpreter for the esolang "AsciiDots". This video explains it well: https://www.youtube.com/watch?v=2BvBk-WHHZQ
--- 
 
 --@name AsciiDots
 --@author Jacbo
