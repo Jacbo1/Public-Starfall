@@ -16,7 +16,7 @@ local BetterCoroutine = {}
 local coroutineObject = {}
 coroutineObject.__index = coroutineObject
 
---Creates new coroutine
+-- Creates new coroutine
 BetterCoroutine.wrap = function(func)
     local cor = coroutine.create(func)
     local t = {cor, func}
@@ -24,7 +24,7 @@ BetterCoroutine.wrap = function(func)
     return t
 end
 
---Run the wrapped function
+-- Run the wrapped function
 function coroutineObject:__call(...)
     local status = coroutine.status(self[1])
     if status == "dead" then
@@ -33,7 +33,7 @@ function coroutineObject:__call(...)
     return coroutine.resume(self[1], ...)
 end
 
---Restart coroutine wrapped
+-- Restart coroutine wrapped
 function coroutineObject:restart()
     self[1] = coroutine.create(self[2])
 end

@@ -995,9 +995,7 @@ local function cancelStream()
         cancelQueue = false
         return
     end
-    if not canceling then
-        canceling = true
-    end
+    canceling = true
     local name = stream[1]
     local maxSize = math.min(bytesLeft - #name, net.getBytesLeft() - #name - 15)
     if maxSize <= 0 then return end
@@ -1033,9 +1031,7 @@ local function network()
     local stream = sends[1]
     while stream do
         local first = not stream[8]
-        if not streaming then
-            streaming = true
-        end
+        streaming = true
         local size = stream[3]
         local name = stream[1]
         local maxSize = math.min(bytesLeft - #name, net.getBytesLeft() - #name - 15)

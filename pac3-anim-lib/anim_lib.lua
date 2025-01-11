@@ -64,8 +64,8 @@ if CLIENT then
             frame0,                 -- Reference frame (frame 0)
             frame0.BoneInfo         -- Current pose
         }
-        setmetatable(t, anim)
-        return t
+
+        return setmetatable(t, anim)
     end
     
     local playingAnims = {}
@@ -154,9 +154,11 @@ if CLIENT then
                     -- Not interpolated
                     for bone, info in pairs(frame2) do
                         local cur = curPose[bone]
+
                         if info[1] ~= cur[1] then
                             ent:manipulateBonePosition(bone, info[1])
                         end
+
                         if info[2] ~= cur[2] then
                             ent:manipulateBoneAngles(bone, info[2])
                         end
@@ -199,29 +201,28 @@ if CLIENT then
                     for bone, info1 in pairs(frame1) do
                         local info2 = frame2[bone]
                         local cur = curPose[bone]
-                        if info1[1] == info2[1] then
-                            if info1[1] ~= cur[1] then
-                                ent:manipulateBonePosition(bone, info1[1])
-                            end
-                        else
+                        if info1[1] ~= info2[1] then
                             ent:manipulateBonePosition(bone, math_lerpVector(ratio, info1[1], info2[1]))
+                        elseif info1[1] ~= cur[1] then
+                            ent:manipulateBonePosition(bone, info1[1])
                         end
-                        if info1[2] == info2[2] then
-                            if info1[2] ~= cur[2] then
-                                ent:manipulateBoneAngles(bone, info1[2])
-                            end
-                        else
+
+                        if info1[2] ~= info2[2] then
                             ent:manipulateBoneAngles(bone, math_lerpAngle(ratio, info1[2], info2[2]))
+                        elseif info1[2] ~= cur[2] then
+                            ent:manipulateBoneAngles(bone, info1[2])
                         end
                     end
                 end
                 curPose = frame1
             end,
+
             function(err)
                 print(err)
                 table.insert(destroy, anim)
             end)
         end
+
         for _, anim in ipairs(destroy) do
             anim:destroy()
         end

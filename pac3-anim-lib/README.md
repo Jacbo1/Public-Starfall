@@ -1,5 +1,6 @@
 # Pac3 Animation Library
 Parse Pac3 custom animations and play them on holograms.
+
 ## How to use
 ```lua
 --@name Anim Lib Test
@@ -11,6 +12,7 @@ local holo = holograms.create(chip():getPos(), Angle(), "models/player/barney.md
 local myAnim = anim.create(holo, json.decode(file.read("myAnim.txt")))
 myAnim:play()
 ```
+
 ## Functions
 * `anim.create(entity, table)` Creates an animation from the table and associates it with the entity. Returns an anim object.
 * `anim:play()` Starts/resume an animation. Calling it while an animation is already running does nothing.

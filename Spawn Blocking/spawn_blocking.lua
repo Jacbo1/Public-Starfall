@@ -8,10 +8,12 @@
 require("CorWrap")
 
 local coroutine_yield = function()
-    try(coroutine.yield,
-    function(err)
-        error("You must wrap all of the code in corWrap(func)!\n" .. table.toString(err))
-    end)
+    try(
+        coroutine.yield,
+        function(err)
+            error("You must wrap all of the code in corWrap(func)!\n" .. table.toString(err))
+        end
+    )
 end
 
 if SERVER then

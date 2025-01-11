@@ -1,6 +1,7 @@
-## Coroutine Wrapper
+# Coroutine Wrapper
 This is a library for other libraries. It is used to keep all code inside coroutines so libraries can make functions that block until execution is finished while still being able to yield.
-### Usage
+
+## Usage
 It will automatically wrap anything run by
 * hook.add
 * timer.simple
@@ -10,7 +11,8 @@ It will automatically wrap anything run by
 * net.receive
 * safeNet.receive (only if safeNet is included and required before this Coroutine Wrapper. It is not required)
 For anything not in the above cases, `corWrap(function func, args ...)` or `corWrapHook(function func, string hookname, args ...)` must be used. `corWrap` will resume in a think hook while `corWrapHook` will resume in whatever hook is specified.
-### Example
+
+## Example
 This example uses [Spawn Blocking](https://github.com/Jacbo1/Public-Starfall/tree/main/Spawn%20Blocking)  
 **Note: SafeNet is not required**
 ```lua
@@ -19,8 +21,8 @@ This example uses [Spawn Blocking](https://github.com/Jacbo1/Public-Starfall/tre
 --@shared
 --@include https://raw.githubusercontent.com/Jacbo1/Public-Starfall/main/SafeNet/safeNet.lua as SafeNet
 --@include https://raw.githubusercontent.com/Jacbo1/Public-Starfall/refs/heads/main/Spawn%20Blocking/spawn_blocking.lua as SpawnBlocking
-require("SafeNet")
-local net = safeNet
+
+local net = require("SafeNet")
 require("SpawnBlocking")
 
 if SERVER then

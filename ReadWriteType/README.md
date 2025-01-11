@@ -16,12 +16,24 @@ file.write("test.txt", "")
 local writer = FileWriter("test.txt", 1024)
 writer:writeDouble(12.45)
 writer:writeInt24(2567)
-local t = {123, "Hello, world!", Vector(4,5,6), Angle(-7,-8,-9), {test = Quaternion(1,2,3,4), abc = Color(1,2,3,4), Matrix({{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16}})}}
+
+local t = {
+    123,
+    "Hello, world!",
+    Vector(4,5,6),
+    Angle(-7,-8,-9),
+    {
+        test = Quaternion(1,2,3,4),
+        abc = Color(1,2,3,4),
+        Matrix({{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16}})
+    }
+}
+
 writer:writeTable(t)
 writer:writeMulti(nil, 123, "hello")
 writer:writeVector(Vector(1,2354.653,-35.21))
 
-writer:writeBuffer() -- VERY IMPORTANT
+writer:writeBuffer() -- IMPORTANT: Writes anything still in the buffer
 
 local reader = FileReader("test.txt")
 print(reader:readDouble())

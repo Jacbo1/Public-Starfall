@@ -28,7 +28,7 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.NodeList;
 import javax.imageio.metadata.IIOMetadataNode;
 
-public class gifToSpriteSheet{
+public class gifToSpriteSheet {
     // Path to the gif file. Can be a file path or a url. Not all gifs work.
     static String gifPath = "https://cdn.discordapp.com/emojis/423966409232744449.gif?v=1";
     //static String gifPath = "C:\\Users\\JaCoB\\Desktop\\Stuff\\Pics\\worley noise.gif";
@@ -58,21 +58,18 @@ public class gifToSpriteSheet{
         Graphics g = null;
         Graphics2D g2 = null;
 
-        String[] imageatt = new String[]{
-                "imageLeftPosition",
-                "imageTopPosition",
-                "imageWidth",
-                "imageHeight"
-            };    
+        String[] imageatt = new String[] {
+            "imageLeftPosition",
+            "imageTopPosition",
+            "imageWidth",
+            "imageHeight"
+        };
 
         // Gif to image sequence code by Chris Stillwell https://stackoverflow.com/a/10627458
         ImageReader reader = (ImageReader)ImageIO.getImageReadersByFormatName("gif").next();
         ImageInputStream ciis = null;
-        if(new File(gifPath).exists()){
-            ciis = ImageIO.createImageInputStream(new File(gifPath));
-        }else{
-            ciis = ImageIO.createImageInputStream(new URL(gifPath).openStream());
-        }
+        if (new File(gifPath).exists()) ciis = ImageIO.createImageInputStream(new File(gifPath));
+        else ciis = ImageIO.createImageInputStream(new URL(gifPath).openStream());
         reader.setInput(ciis, false);
 
         int noi = reader.getNumImages(true);
@@ -92,7 +89,7 @@ public class gifToSpriteSheet{
             for (int j = 0; j < children.getLength(); j++) {
                 Node nodeItem = (Node) children.item(j);
 
-                if(nodeItem.getNodeName().equals("ImageDescriptor")){
+                if (nodeItem.getNodeName().equals("ImageDescriptor")) {
                     Map<String, Integer> imageAttr = new HashMap<String, Integer>();
 
                     for (int k = 0; k < imageatt.length; k++) {
@@ -100,7 +97,8 @@ public class gifToSpriteSheet{
                         Node attnode = (Node) attr.getNamedItem(imageatt[k]);
                         imageAttr.put(imageatt[k], Integer.valueOf(attnode.getNodeValue()));
                     }
-                    if(i==0){
+
+                    if (i==0) {
                         width = imageAttr.get("imageWidth");
                         height = imageAttr.get("imageHeight");
 
@@ -124,14 +122,14 @@ public class gifToSpriteSheet{
                         g2 = (Graphics2D)master.getGraphics();
                         g2.setBackground(new Color(0,0,0,0));
                     }
-                    if(clearOnRedraw)
-                        g2.clearRect(0, 0, width, height);
+                    
+                    if (clearOnRedraw) g2.clearRect(0, 0, width, height);
                     g2.drawImage(image, imageAttr.get("imageLeftPosition"), imageAttr.get("imageTopPosition"), null);
                 }
             }
 
             // Draw to sheet
-            if(spritesLeft == 0){
+            if (spritesLeft == 0) {
                 new File(outDir + sheetIndex + ".png").delete();
                 ImageIO.write(curSheet, "png", new File(outDir + sheetIndex + ".png"));
                 sheetIndex++;
@@ -141,14 +139,17 @@ public class gifToSpriteSheet{
                 x = 0;
                 y = 0;
             }
+
             g.drawImage(master, x, y, null);
             x += width;
-            if(x >= spriteSheetWidth){
+            if (x >= spriteSheetWidth) {
                 x = 0;
                 y += height;
             }
+
             spritesLeft--;
         }
+
         new File(outDir + sheetIndex + ".png").delete();
         ImageIO.write(curSheet, "png", new File(outDir + sheetIndex + ".png"));
         
@@ -158,21 +159,14 @@ public class gifToSpriteSheet{
     // Gif delay code by Sage https://stackoverflow.com/a/20079110
     private static double getDelay(String path) throws Exception {
         ImageReader reader = ImageIO.getImageReadersBySuffix("gif").next();
-        if(new File(path).exists()){
-            reader.setInput(ImageIO.createImageInputStream(new FileInputStream(path)));
-        }else{
-            reader.setInput(ImageIO.createImageInputStream(new URL(path).openStream()));
-        }
+        if (new File(path).exists()) reader.setInput(ImageIO.createImageInputStream(new FileInputStream(path)));
+        else reader.setInput(ImageIO.createImageInputStream(new URL(path).openStream()));
         int i = reader.getMinIndex();
         int numImages = reader.getNumImages(true);
-
         IIOMetadata imageMetaData =  reader.getImageMetadata(0);
         String metaFormatName = imageMetaData.getNativeMetadataFormatName();
-
         IIOMetadataNode root = (IIOMetadataNode)imageMetaData.getAsTree(metaFormatName);
-
         IIOMetadataNode graphicsControlExtensionNode = getNode(root, "GraphicControlExtension");
-
         return Double.valueOf(graphicsControlExtensionNode.getAttribute("delayTime")) * 0.01;
     }
 
@@ -180,11 +174,12 @@ public class gifToSpriteSheet{
         int nNodes = rootNode.getLength();
         for (int i = 0; i < nNodes; i++) {
             if (rootNode.item(i).getNodeName().compareToIgnoreCase(nodeName)== 0) {
-                return((IIOMetadataNode) rootNode.item(i));
+                return (IIOMetadataNode)rootNode.item(i);
             }
         }
+
         IIOMetadataNode node = new IIOMetadataNode(nodeName);
         rootNode.appendChild(node);
-        return(node);
+        return node;
     }
 }

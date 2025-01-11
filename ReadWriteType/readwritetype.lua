@@ -81,11 +81,13 @@ if CLIENT then
     -- Write string (so it can be read with FileReader)
     function FileWriter:writeString(str, length)
         local x = #str
+
         if length then
             self[2] = self[2] .. str
         else
             self[2] = self[2] .. string_char(x % 0x100, bit_rshift(x, 8) % 0x100, bit_rshift(x, 16) % 0x100, bit_rshift(x, 24) % 0x100) .. str
         end
+        
         if #self[2] >= self[3] then
             file_append(self[1], self[2])
             self[2] = ""
@@ -99,6 +101,7 @@ if CLIENT then
             self[2] = self[2] + length
             return str
         end
+
         local a, b, c, d = string_byte(self[1], self[2], self[2] + 3)
         length = d * 0x1000000 + c * 0x10000 + b * 0x100 + a
         local str = string_sub(self[1], self[2] + 4, self[2] + 3 + length)
@@ -172,8 +175,7 @@ if CLIENT then
         local a, b = string_byte(self[1], self[2], self[2] + 1)
         self[2] = self[2] + 2
         local x = b * 0x100 + a
-        if x >= 0x8000 then return x - 0x10000 end
-        return x
+        return x >= 0x8000 and x - 0x10000 or x
     end
     
     -- Read an unsigned 16 bit int
@@ -202,8 +204,7 @@ if CLIENT then
         local a, b, c = string_byte(self[1], self[2], self[2] + 2)
         self[2] = self[2] + 3
         local x = c * 0x10000 + b * 0x100 + a
-        if x >= 0x800000 then return x - 0x1000000 end
-        return x
+        return x >= 0x800000 and x - 0x1000000 or x
     end
     
     -- Read an unsigned 24 bit int
@@ -261,41 +262,40 @@ if CLIENT then
     end
     
     local function packFloat(number)
-        if number == 0 then
-            return string_char(0x00, 0x00, 0x00, 0x00)
-        elseif number == math_huge then
-            return string_char(0x00, 0x00, 0x80, 0x7F)
-        elseif number == -math_huge then
-            return string_char(0x00, 0x00, 0x80, 0xFF)
-        elseif number ~= number then
-            return string_char(0x00, 0x00, 0xC0, 0xFF)
-        else
-            local sign = 0x00
-            if number < 0 then
-                sign = 0x80
-                number = -number
-            end
-            local mantissa, exponent = math_frexp(number)
-            exponent = exponent + 0x7F
-            if exponent <= 0 then
-                mantissa = math_ldexp(mantissa, exponent - 1)
-                exponent = 0
-            elseif exponent > 0 then
-                if exponent >= 0xFF then
-                    return string_char(0x00, 0x00, 0x80, sign + 0x7F)
-                elseif exponent == 1 then
-                    exponent = 0
-                else
-                    mantissa = mantissa * 2 - 1
-                    exponent = exponent - 1
-                end
-            end
-            mantissa = math_floor(math_ldexp(mantissa, 23) + 0.5)
-            return string_char(mantissa % 0x100,
-                bit_rshift(mantissa, 8) % 0x100,
-                (exponent % 2) * 0x80 + bit_rshift(mantissa, 16),
-                sign + bit_rshift(exponent, 1))
+        if number == 0 then return string_char(0x00, 0x00, 0x00, 0x00) end
+        if number == math_huge then return string_char(0x00, 0x00, 0x80, 0x7F) end
+        if number == -math_huge then return string_char(0x00, 0x00, 0x80, 0xFF) end
+        if number ~= number then return string_char(0x00, 0x00, 0xC0, 0xFF) end
+
+        local sign = 0x00
+        if number < 0 then
+            sign = 0x80
+            number = -number
         end
+
+        local mantissa, exponent = math_frexp(number)
+        exponent = exponent + 0x7F
+        if exponent <= 0 then
+            mantissa = math_ldexp(mantissa, exponent - 1)
+            exponent = 0
+        elseif exponent > 0 then
+            if exponent >= 0xFF then
+                return string_char(0x00, 0x00, 0x80, sign + 0x7F)
+            end
+            
+            if exponent == 1 then
+                exponent = 0
+            else
+                mantissa = mantissa * 2 - 1
+                exponent = exponent - 1
+            end
+        end
+        mantissa = math_floor(math_ldexp(mantissa, 23) + 0.5)
+
+        return string_char(mantissa % 0x100,
+            bit_rshift(mantissa, 8) % 0x100,
+            (exponent % 2) * 0x80 + bit_rshift(mantissa, 16),
+            sign + bit_rshift(exponent, 1))
     end
     
     -- Write a float
@@ -314,66 +314,55 @@ if CLIENT then
         local exponent = (b1 % 0x80) * 0x02 + bit_rshift(b2, 7)
         local mantissa = math_ldexp(((b2 % 0x80) * 0x100 + b3) * 0x100 + b4, -23)
         if exponent == 0xFF then
-            if mantissa > 0 then
-                return 0 / 0
-            else
-                if b1 >= 0x80 then
-                    return -math_huge
-                else
-                    return math_huge
-                end
-            end
-        elseif exponent > 0 then
-            mantissa = mantissa + 1
-        else
-            exponent = exponent + 1
+            if mantissa > 0 then return 0 / 0 end
+            if b1 >= 0x80 then return -math_huge end
+            return math_huge
         end
-        if b1 >= 0x80 then
-            mantissa = -mantissa
-        end
+        if exponent > 0 then mantissa = mantissa + 1
+        else exponent = exponent + 1 end
+        if b1 >= 0x80 then mantissa = -mantissa end
         return math_ldexp(mantissa, exponent - 0x7F)
     end
     
     local function packDouble(number)
-        if number == 0 then
-            return string_char(0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00)
-        elseif number == math_huge then
-            return string_char(0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF0, 0x7F)
-        elseif number == -math_huge then
-            return string_char(0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF0, 0xFF)
-        elseif number ~= number then
-            return string_char(0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF8, 0xFF)
-        else
-            local sign = 0x00
-            if number < 0 then
-                sign = 0x80
-                number = -number
-            end
-            local mantissa, exponent = math_frexp(number)
-            exponent = exponent + 0x3FF
-            if exponent <= 0 then
-                mantissa = math_ldexp(mantissa, exponent - 1)
-                exponent = 0
-            elseif exponent > 0 then
-                if exponent >= 0x7FF then
-                    return string_char(0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF0, sign + 0x7F)
-                elseif exponent == 1 then
-                    exponent = 0
-                else
-                    mantissa = mantissa * 2 - 1
-                    exponent = exponent - 1
-                end
-            end
-            mantissa = math_floor(math_ldexp(mantissa, 52) + 0.5)
-            return string_char(mantissa % 0x100,
-                math_floor(mantissa / 0x100) % 0x100,  --can only rshift up to 32 bit numbers. mantissa is too big
-                math_floor(mantissa / 0x10000) % 0x100,
-                math_floor(mantissa / 0x1000000) % 0x100,
-                math_floor(mantissa / 0x100000000) % 0x100,
-                math_floor(mantissa / 0x10000000000) % 0x100,
-                (exponent % 0x10) * 0x10 + math_floor(mantissa / 0x1000000000000),
-                sign + bit_rshift(exponent, 4))
+        if number == 0 then return string_char(0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00) end
+        if number == math_huge then return string_char(0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF0, 0x7F) end
+        if number == -math_huge then return string_char(0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF0, 0xFF) end
+        if number ~= number then return string_char(0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF8, 0xFF) end
+
+        local sign = 0x00
+        if number < 0 then
+            sign = 0x80
+            number = -number
         end
+
+        local mantissa, exponent = math_frexp(number)
+        exponent = exponent + 0x3FF
+        if exponent <= 0 then
+            mantissa = math_ldexp(mantissa, exponent - 1)
+            exponent = 0
+        elseif exponent > 0 then
+            if exponent >= 0x7FF then
+                return string_char(0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF0, sign + 0x7F)
+            end
+            
+            if exponent == 1 then
+                exponent = 0
+            else
+                mantissa = mantissa * 2 - 1
+                exponent = exponent - 1
+            end
+        end
+        mantissa = math_floor(math_ldexp(mantissa, 52) + 0.5)
+
+        return string_char(mantissa % 0x100,
+            math_floor(mantissa / 0x100) % 0x100,  --can only rshift up to 32 bit numbers. mantissa is too big
+            math_floor(mantissa / 0x10000) % 0x100,
+            math_floor(mantissa / 0x1000000) % 0x100,
+            math_floor(mantissa / 0x100000000) % 0x100,
+            math_floor(mantissa / 0x10000000000) % 0x100,
+            (exponent % 0x10) * 0x10 + math_floor(mantissa / 0x1000000000000),
+            sign + bit_rshift(exponent, 4))
     end
     
     -- Write a double
@@ -392,23 +381,13 @@ if CLIENT then
         local exponent = (b1 % 0x80) * 0x10 + bit_rshift(b2, 4)
         local mantissa = math_ldexp(((((((b2 % 0x10) * 0x100 + b3) * 0x100 + b4) * 0x100 + b5) * 0x100 + b6) * 0x100 + b7) * 0x100 + b8, -52)
         if exponent == 0x7FF then
-            if mantissa > 0 then
-                return 0 / 0
-            else
-                if b1 >= 0x80 then
-                    return -math_huge
-                else
-                    return math_huge
-                end
-            end
-        elseif exponent > 0 then
-            mantissa = mantissa + 1
-        else
-            exponent = exponent + 1
+            if mantissa > 0 then return 0 / 0 end
+            if b1 >= 0x80 then return -math_huge end
+            return math_huge
         end
-        if b1 >= 0x80 then
-            mantissa = -mantissa
-        end
+        if exponent > 0 then mantissa = mantissa + 1
+        else exponent = exponent + 1 end
+        if b1 >= 0x80 then mantissa = -mantissa end
         return math_ldexp(mantissa, exponent - 0x3FF)
     end
     
@@ -487,6 +466,7 @@ if CLIENT then
         while maxQuota and quotaAverage() >= maxQuota do
             coroutine.yield()
         end
+
         local type = type(obj)
         if type == "table" then
             local seq = table.isSequential(obj)
@@ -559,7 +539,6 @@ if CLIENT then
         local count = select("#", ...)
         self[2] = self[2] .. string_char(count)
         local args = {...}
-        
         local writer = self
         
         local writeType2 = coroutine.wrap(function()
@@ -570,19 +549,20 @@ if CLIENT then
             return true
         end)
         
-        if writeType2() ~= true then
-            local running = false
-            local name = "read " .. math.rand(0,1)
-            hook.add("think", name, function()
-                if not running then
-                    running = true
-                    if writeType2() == true then
-                        hook.remove("think", name)
-                    end
-                    running = false
+        -- Unexpected behavior can occur without "== true"
+        if writeType2() == true then return end
+        
+        local running = false
+        local name = "read " .. math.rand(0,1)
+        hook.add("think", name, function()
+            if not running then
+                running = true
+                if writeType2() == true then
+                    hook.remove("think", name)
                 end
-            end)
-        end
+                running = false
+            end
+        end)
     end
     
     -- Write a table asynchronously
@@ -596,19 +576,20 @@ if CLIENT then
             return true
         end)
         
-        if writeType2() ~= true then
-            local running = false
-            local name = "read " .. math.rand(0,1)
-            hook.add("think", name, function()
-                if not running then
-                    running = true
-                    if writeType2() == true then
-                        hook.remove("think", name)
-                    end
-                    running = false
+        -- Unexpected behavior can occur without "== true"
+        if writeType2() == true then return end
+
+        local running = false
+        local name = "read " .. math.rand(0,1)
+        hook.add("think", name, function()
+            if not running then
+                running = true
+                if writeType2() == true then
+                    hook.remove("think", name)
                 end
-            end)
-        end
+                running = false
+            end
+        end)
     end
     
     -- elseif found to be generally faster here than a lookup table
@@ -616,6 +597,7 @@ if CLIENT then
         while maxQuota and quotaAverage() >= maxQuota do
             coroutine.yield()
         end
+
         local type = self:read(1)
         if type == "T" then
             local seq = self:read(1) ~= "0"
@@ -631,16 +613,18 @@ if CLIENT then
                 end
             end
             return t
-        elseif type == "I" then return self:readInt32()
-        elseif type == "D" then return self:readDouble()
-        elseif type == "S" then return self:readString()
-        elseif type == "B" then return self:read(1) ~= "0"
-        elseif type == "V" then return self:readVector()
-        elseif type == "A" then return self:readAngle()
-        elseif type == "C" then return self:readColor()
-        elseif type == "Q" then return self:readQuaternion()
-        elseif type == "M" then return self:readMatrix()
-        elseif type == "N" then return nil end
+        end
+
+        if type == "I" then return self:readInt32() end
+        if type == "D" then return self:readDouble() end
+        if type == "S" then return self:readString() end
+        if type == "B" then return self:read(1) ~= "0" end
+        if type == "V" then return self:readVector() end
+        if type == "A" then return self:readAngle() end
+        if type == "C" then return self:readColor() end
+        if type == "Q" then return self:readQuaternion() end
+        if type == "M" then return self:readMatrix() end
+        if type == "N" then return nil end
     end
     
     -- Read multi
@@ -649,15 +633,15 @@ if CLIENT then
         if count > 0 then
             local i = 0
             local recurse
-            
             local reader = self
-            
+
             recurse = function()
                 i = i + 1
                 if i <= count then
                     return reader:readType(maxQuota), recurse()
                 end
             end
+
             return recurse()
         end
     end
@@ -687,19 +671,21 @@ if CLIENT then
             cb()
             return true
         end)
-        if readType2() ~= true then
-            local running = false
-            local name = "read " .. math.rand(0,1)
-            hook.add("think", name, function()
-                if not running then
-                    running = true
-                    if readType2() == true then
-                        hook.remove("think", name)
-                    end
-                    running = false
+
+        -- Unexpected behavior can occur without "== true"
+        if readType2() == true then return end
+
+        local running = false
+        local name = "read " .. math.rand(0,1)
+        hook.add("think", name, function()
+            if not running then
+                running = true
+                if readType2() == true then
+                    hook.remove("think", name)
                 end
-            end)
-        end
+                running = false
+            end
+        end)
     end
     
     -- Read a table asynchronously
@@ -712,18 +698,19 @@ if CLIENT then
             return true
         end)
         
-        if readType2() ~= true then
-            local running = false
-            local name = "read " .. math.rand(0,1)
-            hook.add("think", name, function()
-                if not running then
-                    running = true
-                    if readType2() == true then
-                        hook.remove("think", name)
-                    end
-                    running = false
+        -- Unexpected behavior can occur without "== true"
+        if readType2() == true then return end
+
+        local running = false
+        local name = "read " .. math.rand(0,1)
+        hook.add("think", name, function()
+            if not running then
+                running = true
+                if readType2() == true then
+                    hook.remove("think", name)
                 end
-            end)
-        end
+                running = false
+            end
+        end)
     end
 end

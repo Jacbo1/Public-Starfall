@@ -1,8 +1,7 @@
-## Public Starfall
-
+# Public Starfall
 Home to my Starfall code that I've made public. All code is freely available to use or reference in any project including published projects.
 
-### Directory
+## Directory
 * [Better Coroutines](Better%20Coroutines) - Essentially a `coroutine.wrap()` that automatically restarts and can be manually restarted prematurely.
 * [Coroutine Wrapper](Coroutine%20Wrapper) - Used to automatically make most default callback functions run as a coroutine to allow code to block execution. Useful for things like [Spawn Blocking](Spawn%20Blocking) for example that blocks execution until an action can be performed.
 * [Dumping Grounds](Dumping%20Grounds) - All of my Starfall chips and files worth uploading. **Not actively maintained**

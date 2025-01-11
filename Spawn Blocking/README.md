@@ -1,7 +1,7 @@
-## Spawn Blocking
+# Spawn Blocking
 **[Coroutine Wrapper](https://github.com/Jacbo1/Public-Starfall/tree/main/Coroutine%20Wrapper) is required.**  
 When trying to spawn/create something, execution will be blocked until it can be created.
-### Usage
+## Usage
 It will overwrite
 * prop.create
 * prop.createComponent
@@ -15,15 +15,15 @@ It will overwrite
 * sounds.create  
 
 with blocking versions.
-### Example
+## Example
 ```lua
 --@name Coroutine Wrapper and Spawn Blocking Example
 --@author Jacbo
 --@shared
 --@include https://raw.githubusercontent.com/Jacbo1/Public-Starfall/main/SafeNet/safeNet.lua as SafeNet
 --@include https://raw.githubusercontent.com/Jacbo1/Public-Starfall/refs/heads/main/Spawn%20Blocking/spawn_blocking.lua as SpawnBlocking
-require("SafeNet")
-local net = safeNet
+
+local net = require("SafeNet")
 require("SpawnBlocking")
 
 if SERVER then

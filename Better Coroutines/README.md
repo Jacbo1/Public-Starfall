@@ -1,6 +1,7 @@
-## Better Coroutines
+# Better Coroutines
 An improved version of `coroutine.wrap()`. It functions identically to `coroutine.wrap()` except it automatically restarts the coroutine when it is run after dying. It also let's you prematurely restart the coroutine without letting it finish.
-### Usage
+
+## Usage
 ```lua
 --@name Better Coroutines Example
 --@author Jacbo
@@ -22,6 +23,7 @@ for i = 1, 2 do
         print("Running")
         status = my_func(123, "abc", "Hello, ", "world!")
     until status
+
     if i == 1 then
         print("Restarting")
     end

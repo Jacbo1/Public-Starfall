@@ -19,13 +19,7 @@
 
 
 local oldNet = net
-local net
-if safeNet then
-    net = safeNet
-else
-    net = oldNet
-end
-
+local net = safeNet or oldNet
 local net_receive = oldNet.receive
 local table_insert = table.insert
 local coroutine_create = coroutine.create
