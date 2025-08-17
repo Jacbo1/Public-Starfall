@@ -122,11 +122,11 @@ end
 -- Writes a color
 -- hasAlpha defaults to true
 function safeNet.writeColor(color, hasAlpha)
-    curSend:writeInt8(color[1])
-    curSend:writeInt8(color[2])
-    curSend:writeInt8(color[3])
+    curSend:writeUInt8(color[1])
+    curSend:writeUInt8(color[2])
+    curSend:writeUInt8(color[3])
     if hasAlpha == nil or hasAlpha then
-        curSend:writeInt8(color[4])
+        curSend:writeUInt8(color[4])
     end
 end
 
@@ -627,11 +627,11 @@ function safeNet.extend(stringStream)
     
     function stringStream:writeColor(c, hasAlpha)
         -- hasAlpha defaults to true
-        self:writeInt8(c[1])
-        self:writeInt8(c[2])
-        self:writeInt8(c[3])
+        self:writeUInt8(c[1])
+        self:writeUInt8(c[2])
+        self:writeUInt8(c[3])
         if hasAlpha == nil or hasAlpha then
-            self:writeInt8(c[4])
+            self:writeUInt8(c[4])
         end
     end
     
