@@ -25,3 +25,6 @@ myAnim:play()
 * `anim:setStart(frame)` Sets the start frame. Alternatively use `anim[8]`.
 * `anim:setRestart(frame)` Sets the restart frame. Alternatively use `anim[7]`.
 * `anim:setInterpolation(mode)` Sets the interpolation mode. Valid modes: linear, cosine, cubic, none.
+
+### License
+This library is a derivative work of PAC3 and is therefore licensed under the GPL-3.0 license as required by the GPL-3.0 license on PAC3. Some parts of the code in this library are taken from or are modified versions of PAC3 code.
